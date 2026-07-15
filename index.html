@@ -322,7 +322,12 @@
         </div>
         <div class="form-group">
           <label>ประเภทของระบบงาน</label>
-          <select id="addType"><option value="">กำลังโหลดประเภทงาน...</option></select>
+          <select id="addType" onchange="syncWorkflowTemplateToTaskType()"><option value="">กำลังโหลดประเภทงาน...</option></select>
+        </div>
+        <div class="form-group">
+          <label>เทมเพลตขั้นตอนการดำเนินงาน</label>
+          <select id="addWorkflowTemplate"><option value="">กำลังโหลดเทมเพลต...</option></select>
+          <small id="workflowTemplateHint" style="color:#667085;font-size:10px;line-height:1.45;"></small>
         </div>
         <div class="form-group">
           <label>ชื่องาน / ชื่อโครงการหลัก</label>
@@ -481,6 +486,30 @@ const STEPS_TEMPLATE = [
   "8. ประชุมกำหนดราคากลาง", "9. ตารางราคากลาง", "10. บันทึกเชิญยื่นซอง", "10.1 อนุมัติเบิกครุภัณฑ์",
   "11. คณะกรรมการเปิดซอง", "11.1 อนุมัติเบิกค่าเปิดซอง", "12. ตรวจรับพัสดุงาน", "13. บันทึกผลตรวจรับ", "14. ขออนุมัติเบิกจ่าย"
 ];
+
+const WORKFLOW_TEMPLATES = Object.freeze([
+  {
+    id: "procurement",
+    name: "จัดซื้อจัดจ้าง 17 ขั้นตอน",
+    description: "ลำดับงานโครงการจัดซื้อจัดจ้าง ตั้งแต่บันทึกโครงการจนถึงอนุมัติเบิกจ่าย",
+    recommendedKind: "project",
+    steps: STEPS_TEMPLATE
+  },
+  {
+    id: "general",
+    name: "งานทั่วไป 2 ขั้นตอน",
+    description: "เตรียมเอกสารและตรวจสอบความถูกต้องก่อนส่งฝ่ายบริหาร",
+    recommendedKind: "general",
+    steps: ["ขั้นเตรียมเอกสารนโยบายตั้งต้น", "ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร"]
+  },
+  {
+    id: "blank",
+    name: "เริ่มงานเปล่า",
+    description: "ไม่สร้างขั้นตอนเริ่มต้น สามารถเพิ่มขั้นตอนเองภายหลังใน Modal",
+    recommendedKind: "general",
+    steps: []
+  }
+]);
 
 const DEMO_TASKS = [
   {
@@ -774,6 +803,7 @@ function renderTaskTypeControls() {
     option.textContent = "ยังไม่มีประเภทงานที่เปิดใช้งาน";
     select.appendChild(option);
   }
+  renderWorkflowTemplateOptions();
 
   const group = document.getElementById("typeFilterGroup");
   group.textContent = "";
@@ -793,6 +823,41 @@ function renderTaskTypeControls() {
     group.appendChild(button);
   });
   refreshIcons();
+}
+
+function renderWorkflowTemplateOptions() {
+  const select = document.getElementById("addWorkflowTemplate");
+  const previousValue = select.value;
+  select.textContent = "";
+  WORKFLOW_TEMPLATES.forEach(template => {
+    const option = document.createElement("option");
+    option.value = template.id;
+    option.textContent = template.name;
+    select.appendChild(option);
+  });
+  select.onchange = updateWorkflowTemplateHint;
+  if (WORKFLOW_TEMPLATES.some(template => template.id === previousValue)) {
+    select.value = previousValue;
+  } else {
+    syncWorkflowTemplateToTaskType();
+  }
+  updateWorkflowTemplateHint();
+}
+
+function syncWorkflowTemplateToTaskType() {
+  const templateSelect = document.getElementById("addWorkflowTemplate");
+  if (!templateSelect) return;
+  const type = getTaskType(document.getElementById("addType").value);
+  const recommended = WORKFLOW_TEMPLATES.find(template => template.recommendedKind === type.template_kind);
+  if (recommended) templateSelect.value = recommended.id;
+  updateWorkflowTemplateHint();
+}
+
+function updateWorkflowTemplateHint() {
+  const selectedId = document.getElementById("addWorkflowTemplate")?.value;
+  const template = WORKFLOW_TEMPLATES.find(item => item.id === selectedId);
+  const hint = document.getElementById("workflowTemplateHint");
+  if (hint) hint.textContent = template ? `${template.description} · ${template.steps.length} ขั้นตอน` : "";
 }
 
 function renderTaskTypeManager() {
@@ -1216,19 +1281,19 @@ async function createNewTask() {
   const p = document.getElementById("addPriority").value;
   const due = document.getElementById("addDueDate").value;
   const registeredDate = document.getElementById("addRegisteredDate").value;
+  const workflowTemplateId = document.getElementById("addWorkflowTemplate").value;
 
   if (!title) { alert("กรุณาใส่ชื่องานก่อนบันทึกครับ"); return; }
   if (!type) { alert("ยังไม่มีประเภทงานที่เปิดใช้งาน กรุณาติดต่อ Admin"); return; }
+  const workflowTemplate = WORKFLOW_TEMPLATES.find(template => template.id === workflowTemplateId);
+  if (!workflowTemplate) { alert("กรุณาเลือกเทมเพลตขั้นตอนการดำเนินงาน"); return; }
 
-  let steps = [];
-  if (getTaskType(type).template_kind === 'project') {
-    steps = STEPS_TEMPLATE.map(name => ({ name, checked: false, note: "", daysSpent: 0 }));
-  } else {
-    steps = [
-      { name: "ขั้นเตรียมเอกสารนโยบายตั้งต้น", checked: false, note: "", daysSpent: 0 },
-      { name: "ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร", checked: false, note: "", daysSpent: 0 }
-    ];
-  }
+  const steps = workflowTemplate.steps.map((name, idx) => ({
+    name: `${idx + 1}. ${stripStepNumber(name)}`,
+    checked: false,
+    note: "",
+    daysSpent: 0
+  }));
 
   const button = document.querySelector("button.primary");
   if (button) button.disabled = true;
