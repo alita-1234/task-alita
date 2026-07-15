@@ -237,7 +237,21 @@
   .user-table th,.user-table td { padding:11px 8px; border-bottom:1px solid #eaecf0; text-align:left; }
   .user-table th { color:#667085; font-size:11px; }
   .user-table td { color:#344054; font-size:12px; }
-  #userModal .modal { width:820px; overflow-y:auto; }
+  .admin-page { display:none; position:fixed; inset:0; z-index:150; overflow-y:auto; background:#f7f8fc; }
+  .admin-page.open { display:block; }
+  .admin-page-header { position:sticky; top:0; z-index:2; display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px max(24px,calc((100vw - 1200px)/2)); background:rgba(255,255,255,.94); border-bottom:1px solid #e4e7ec; backdrop-filter:blur(16px); }
+  .admin-page-title { display:flex; align-items:center; gap:12px; }
+  .admin-page-title h2 { font-size:18px; font-weight:800; }
+  .admin-page-title p { margin-top:2px; color:#667085; font-size:11px; }
+  .admin-page-body { max-width:1200px; margin:0 auto; padding:24px; }
+  .admin-tabs { display:flex; gap:6px; margin-bottom:18px; padding:5px; overflow-x:auto; background:#eaecf0; border-radius:12px; }
+  .admin-tab-btn { flex:1; min-width:170px; display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 14px; border:0; border-radius:9px; color:#667085; background:transparent; cursor:pointer; font-size:12px; font-weight:800; }
+  .admin-tab-btn.active { color:#4338ca; background:#fff; box-shadow:0 1px 4px rgba(16,24,40,.09); }
+  .admin-tab-panel { display:none; padding:20px; background:#fff; border:1px solid #e4e7ec; border-radius:16px; box-shadow:0 8px 24px rgba(16,24,40,.04); }
+  .admin-tab-panel.active { display:block; }
+  .admin-panel-heading { margin-bottom:16px; }
+  .admin-panel-heading h3 { font-size:16px; font-weight:800; }
+  .admin-panel-heading p { margin-top:3px; color:#667085; font-size:11px; }
   #userListArea { overflow-x:auto; }
   .user-table { min-width:680px; }
   .approval-btn { min-width:92px; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:800; }
@@ -247,7 +261,7 @@
   .approval-status { display:block; margin-top:4px; font-size:10px; font-weight:700; }
   .approval-status.pending { color:#b54708; }
   .approval-status.approved { color:#067647; }
-  .admin-section { padding-top:16px; margin-top:8px; border-top:1px solid #e4e7ec; max-height:42vh; overflow-y:auto; padding-right:4px; }
+  .admin-section { padding-top:16px; margin-top:8px; border-top:1px solid #e4e7ec; }
   .type-form { display:grid; grid-template-columns:1fr 1.5fr 1fr auto auto; gap:8px; align-items:end; margin:12px 0; }
   .type-form .form-group { gap:4px; }
   .type-list { display:flex; flex-direction:column; gap:7px; }
@@ -259,6 +273,12 @@
   .workflow-template-row { display:grid; grid-template-columns:minmax(160px,1.4fr) minmax(120px,1fr) auto auto; gap:8px; align-items:center; padding:10px; border:1px solid #eaecf0; border-radius:9px; }
   @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
   @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row,.template-form,.workflow-template-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
+  @media(max-width:640px) {
+    .admin-page-header { padding:12px 14px; }
+    .admin-page-body { padding:14px; }
+    .admin-tab-panel { padding:14px; }
+    .admin-page-title p { display:none; }
+  }
 </style>
 </head>
 <body>
@@ -305,7 +325,7 @@
     <div class="brand-copy"><h1>ALITA TASK WORKSPACE</h1><small>ระบบติดตามและขับเคลื่อนภารกิจ</small></div>
     <span class="tag-eyebrow">Workspace</span>
   </div>
-  <div style="display:flex;align-items:center;gap:10px;"><span id="dbStatus" class="tag" style="background:#f2f4f7;color:#667085;">กำลังเชื่อมต่อ...</span><div id="alertBanner" style="color:#EF4444; font-weight:bold; font-size:12px;"></div><div class="user-menu" id="userMenu"><span class="role-badge user" id="currentRole">USER</span><span class="user-email" id="userEmail"></span><button class="admin-btn" id="adminButton" onclick="openUserManager()"><i data-lucide="users"></i><span>จัดการผู้ใช้</span></button><button class="logout-btn" onclick="logoutUser()"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button></div></div>
+  <div style="display:flex;align-items:center;gap:10px;"><span id="dbStatus" class="tag" style="background:#f2f4f7;color:#667085;">กำลังเชื่อมต่อ...</span><div id="alertBanner" style="color:#EF4444; font-weight:bold; font-size:12px;"></div><div class="user-menu" id="userMenu"><span class="role-badge user" id="currentRole">USER</span><span class="user-email" id="userEmail"></span><button class="admin-btn" id="adminButton" onclick="openUserManager()"><i data-lucide="settings"></i><span>จัดการระบบ</span></button><button class="logout-btn" onclick="logoutUser()"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button></div></div>
 </header>
 
 <div class="layout">
@@ -458,16 +478,26 @@
   </div>
 </div>
 
-<div class="overlay" id="userModal">
-  <div class="modal">
-    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e7ec;padding-bottom:12px;">
-      <div><h3 style="font-size:17px;font-weight:800;">จัดการและอนุมัติผู้ใช้งาน</h3><p style="font-size:12px;color:#667085;margin-top:3px;">ผู้ใช้ Google ที่รออนุมัติจะแสดงอยู่ด้านบน</p></div>
-      <button class="logout-btn" onclick="closeUserManager()"><i data-lucide="x"></i>ปิด</button>
-    </div>
-    <div class="modal-scroll" id="userListArea"></div>
-    <section class="admin-section">
+<div class="admin-page" id="userModal">
+  <div class="admin-page-header">
+    <div class="admin-page-title"><span class="brand-mark"><i data-lucide="settings"></i></span><div><h2>จัดการระบบ</h2><p>ตั้งค่าผู้ใช้งาน ประเภทงาน และเทมเพลตขั้นตอน</p></div></div>
+    <button class="logout-btn" onclick="closeUserManager()"><i data-lucide="arrow-left"></i>กลับ Workspace</button>
+  </div>
+  <div class="admin-page-body">
+    <nav class="admin-tabs" aria-label="เมนูตั้งค่าระบบ">
+      <button class="admin-tab-btn active" id="adminTabUsers" onclick="setAdminTab('users')"><i data-lucide="users"></i>ผู้ใช้งานและสิทธิ์</button>
+      <button class="admin-tab-btn" id="adminTabTypes" onclick="setAdminTab('types')"><i data-lucide="folders"></i>ประเภทระบบงาน</button>
+      <button class="admin-tab-btn" id="adminTabTemplates" onclick="setAdminTab('templates')"><i data-lucide="list-tree"></i>เทมเพลตขั้นตอน</button>
+    </nav>
+    <section class="admin-tab-panel active" id="adminPanelUsers">
+      <div class="admin-panel-heading"><h3>จัดการและอนุมัติผู้ใช้งาน</h3><p>ผู้ใช้ Google ที่รออนุมัติจะแสดงอยู่ด้านบน</p></div>
+      <div id="userListArea"></div>
+    </section>
+    <section class="admin-tab-panel" id="adminPanelTypes">
+      <div class="admin-panel-heading">
       <h3 style="font-size:15px;font-weight:800;">ประเภทของระบบงาน</h3>
       <p style="font-size:11px;color:#667085;">เพิ่ม แก้ไข เปิด/ปิดประเภทที่ผู้ใช้เลือกตอนสร้างงาน</p>
+      </div>
       <form class="type-form" onsubmit="submitTaskType(event)">
         <div class="form-group"><label for="typeCode">รหัสภาษาอังกฤษ</label><input id="typeCode" pattern="[a-z0-9][a-z0-9_-]{1,39}" placeholder="finance" required></div>
         <div class="form-group"><label for="typeName">ชื่อประเภท</label><input id="typeName" maxlength="100" placeholder="งานการเงิน" required></div>
@@ -477,9 +507,11 @@
       </form>
       <div class="type-list" id="taskTypeList"></div>
     </section>
-    <section class="admin-section">
+    <section class="admin-tab-panel" id="adminPanelTemplates">
+      <div class="admin-panel-heading">
       <h3 style="font-size:15px;font-weight:800;">จัดการเทมเพลตขั้นตอน</h3>
       <p style="font-size:11px;color:#667085;">หนึ่งบรรทัดต่อหนึ่งขั้นตอน ระบบจะรันเลขให้อัตโนมัติเมื่อสร้างงาน</p>
+      </div>
       <form class="template-form" id="workflowTemplateForm" onsubmit="submitWorkflowTemplate(event)">
         <input type="hidden" id="workflowTemplateId">
         <div class="form-group"><label for="workflowTemplateName">ชื่อเทมเพลต</label><input id="workflowTemplateName" maxlength="120" placeholder="เช่น ขั้นตอนงานการเงิน" required></div>
@@ -711,6 +743,8 @@ async function logoutUser() {
 async function openUserManager() {
   if (currentProfile?.role !== "admin") return;
   document.getElementById("userModal").classList.add("open");
+  document.body.style.overflow = "hidden";
+  setAdminTab("users");
   const area = document.getElementById("userListArea");
   area.textContent = "กำลังโหลดรายชื่อผู้ใช้...";
   try {
@@ -727,6 +761,19 @@ async function openUserManager() {
 
 function closeUserManager() {
   document.getElementById("userModal").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function setAdminTab(tab) {
+  const tabs = ["users", "types", "templates"];
+  if (!tabs.includes(tab)) return;
+  tabs.forEach(name => {
+    const suffix = name.charAt(0).toUpperCase() + name.slice(1);
+    document.getElementById(`adminTab${suffix}`).classList.toggle("active", name === tab);
+    document.getElementById(`adminPanel${suffix}`).classList.toggle("active", name === tab);
+  });
+  document.getElementById("userModal").scrollTo({ top: 0, behavior: "smooth" });
+  refreshIcons();
 }
 
 function renderUserTable(users) {
