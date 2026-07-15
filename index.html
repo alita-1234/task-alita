@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alita Task Workspace</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F8FAFC; color: #0F172A; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; }
+
+  header { background: #ffffff; border-bottom: 1px solid #E2E8F0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+  h1 { font-size: 18px; font-weight: 700; }
+  .tag-eyebrow { font-size: 10px; font-weight: 700; color: #fff; background: #0F172A; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+
+  /* Layout Hierarchy */
+  .layout { display: grid; grid-template-columns: 300px 1fr; max-width: 1400px; margin: 20px auto; gap: 20px; padding: 0 20px; }
+  @media (max-width: 1024px) { .layout { grid-template-columns: 1fr; } }
+
+  /* Sidebar Controls */
+  aside { display: flex; flex-direction: column; gap: 20px; }
+  .sidebar-box { background: #ffffff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+  .box-title { font-size: 11px; font-weight: 700; color: #94A3B8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  
+  .filter-group { display: flex; flex-direction: column; gap: 4px; }
+  .filter-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; background: transparent; border: none; padding: 8px 12px; border-radius: 6px; color: #475569; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
+  .filter-btn:hover { background: #F1F5F9; color: #0F172A; }
+  .filter-btn.active { background: #F1F5F9; color: #0F172A; font-weight: 600; border-left: 3px solid #0F172A; border-radius: 0 6px 6px 0; }
+  .badge-count { font-size: 11px; font-weight: 600; background: #E2E8F0; color: #475569; padding: 1px 6px; border-radius: 10px; }
+
+  /* Input Forms */
+  .form-stack { display: flex; flex-direction: column; gap: 10px; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label { font-size: 11px; font-weight: 600; color: #475569; }
+  input, select, textarea { font-family: inherit; font-size: 13px; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; background: #fff; color: #0F172A; outline: none; width: 100%; }
+  input:focus, select:focus { border-color: #0F172A; }
+
+  button.primary { background: #0F172A; color: #fff; border: none; border-radius: 6px; padding: 10px 16px; font-size: 13px; font-weight: 600; cursor: pointer; display: block; width: 100%; text-align: center; }
+  button.primary:hover { background: #1E293B; }
+  button.action-btn { background: #0F172A; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; }
+  button.danger-btn { background: transparent; border: 1px solid #FEE2E2; color: #EF4444; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+  button.danger-btn:hover { background: #FEE2E2; }
+  button.inline-add-btn { background: #0F172A; color: white; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; white-space: nowrap; font-size: 12px; font-weight: 600; }
+
+  /* Main Dynamic Content */
+  main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+  .dashboard-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 640px) { .dashboard-grid { grid-template-columns: repeat(2, 1fr); } }
+  .metric-card { background: #ffffff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; }
+  .metric-card .label { font-size: 11px; font-weight: 600; color: #475569; }
+  .metric-card .val { font-size: 20px; font-weight: 700; margin-top: 4px; }
+
+  /* Workspace Header & Views Switcher */
+  .workspace-header { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px 16px; border-radius: 8px; border: 1px solid #E2E8F0; }
+  .view-switcher { display: flex; background: #F1F5F9; padding: 2px; border-radius: 6px; gap: 2px; }
+  .view-btn { border: none; background: transparent; font-size: 12px; font-weight: 600; color: #475569; padding: 6px 14px; border-radius: 4px; cursor: pointer; }
+  .view-btn.active { background: #fff; color: #0F172A; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+  .status-filter-bar { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; background:#fff; border:1px solid #e4e7ec; border-radius:14px; padding:8px; }
+  .status-filter-btn { display:flex; align-items:center; justify-content:center; gap:7px; min-height:40px; border:1px solid transparent; border-radius:9px; background:#f8fafc; color:#667085; cursor:pointer; font-size:12px; font-weight:700; }
+  .status-filter-btn.active { color:#4338ca; background:#eef2ff; border-color:#c7d2fe; }
+  .status-filter-count { min-width:22px; padding:2px 6px; border-radius:999px; background:#fff; color:inherit; text-align:center; }
+
+  .view-pane { display: none; }
+  .view-pane.active { display: block; }
+  #pane-calendar.active { display:flex; flex-direction:column; gap:10px; }
+
+  /* Tasks Component (List View) */
+  .list-container { display: flex; flex-direction: column; gap: 12px; }
+  .task-card { background: #ffffff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .card-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+  
+  .badge-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+  .tag.high { background: #FEE2E2; color: #EF4444; }
+  .tag.medium { background: #FEF3C7; color: #B45309; }
+  .tag.low { background: #DBEAFE; color: #1D4ED8; }
+  .tag.project { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+  .tag.general { background: #FAF5FF; color: #7E22CE; border: 1px solid #E9D5FF; }
+  .tag.status { background: #E2E8F0; color: #0F172A; }
+  .tag.warning { background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: bold; }
+
+  /* Milestone Tracker Styles */
+  .stepper-wrapper { background: #F8FAFC; padding: 12px; border-radius: 6px; border: 1px solid #E2E8F0; }
+  .stepper-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+  .stepper { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+  .step-node { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #E2E8F0; color: #475569; border: 1px solid #CBD5E1; flex-shrink: 0; }
+  .step-node.done { background: #D1FAE5; color: #065F46; border-color: #A7F3D0; }
+  .step-node.active-now { background: #0F172A; color: #fff; border-color: #0F172A; transform: scale(1.1); }
+  .step-node.active-now.alert { background: #EF4444 !important; border-color: #EF4444 !important; }
+  .step-arrow { color: #94A3B8; font-size: 10px; }
+  .step-note-preview { font-size: 11px; font-style: italic; color: #64748B; margin-top: 4px; display: block; }
+  .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid #F1F5F9; padding-top: 8px; }
+
+  /* Kanban Area */
+  .kanban-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 1024px) { .kanban-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 640px) { .kanban-grid { grid-template-columns: 1fr; } }
+  .kanban-col { background: #EDF2F7; border-radius: 8px; padding: 12px; min-height: 400px; display: flex; flex-direction: column; gap: 8px; }
+  .col-title { font-weight: 700; font-size: 12px; color: #475569; border-bottom: 2px solid #CBD5E1; padding-bottom: 4px; margin-bottom: 4px; }
+  .kb-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+  .kb-card-title { font-weight: 600; font-size: 13px; }
+
+  /* Calendar Simulation Grid */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; }
+  .calendar-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:#fff; border:1px solid #e4e7ec; border-radius:12px; }
+  .calendar-nav { display:flex; align-items:center; gap:6px; }
+  .calendar-month-title { font-size:16px; font-weight:800; color:#344054; }
+  .cal-header-cell { text-align: center; font-weight: 700; color: #475569; padding: 6px 0; }
+  .cal-day-cell { background: #F8FAFC; border: 1px solid #E2E8F0; height: 110px; min-height: 110px; max-height: 110px; padding: 4px; border-radius: 4px; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; overflow-x: hidden; }
+  .cal-day-cell.outside-month { background:#f8fafc; opacity:.58; }
+  .cal-day-cell.today { border:2px solid #6366f1; background:#f5f3ff; }
+  .cal-day-num { flex:0 0 auto; font-size: 10px; font-weight: 700; color: #94A3B8; }
+  .cal-item { flex:0 0 auto; max-width:100%; font-size: 10px; padding: 2px 4px; border-radius: 3px; background: #E2E8F0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; font-weight: 500; }
+
+  /* Advanced Configuration Dialog / Modal */
+  .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+  .overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 8px; padding: 20px; width: 620px; max-width: 100%; max-height: 85vh; display: flex; flex-direction: column; gap: 16px; }
+  .modal-scroll { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+  .modal-step-row { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; }
+  .modal-step-top { display: flex; align-items: center; gap: 8px; }
+  .modal-step-top input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+  .modal-step-top label { font-weight: 600; cursor: pointer; flex: 1; }
+  .modal-step-note { display: flex; gap: 6px; align-items: center; margin-left: 24px; margin-top: 4px; }
+  .modal-step-note input { padding: 4px 8px; font-size: 11px; }
+  .step-order-controls { display:inline-flex; gap:4px; margin-left:auto; }
+  .step-order-btn { width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; background:#fff; color:#475467; border:1px solid #d0d5dd; border-radius:7px; cursor:pointer; }
+  .step-order-btn:hover:not(:disabled) { color:#4338ca; border-color:#a5b4fc; background:#eef2ff; }
+  .step-order-btn:disabled { opacity:.35; cursor:not-allowed; }
+  .step-delete-btn { min-height:30px; padding:5px 8px; background:#fff; border:1px solid #fee2e2; border-radius:7px; color:#d92d20; font-size:11px; cursor:pointer; }
+
+  /* Tailwind-inspired visual system */
+  :root { --brand:#4f46e5; --brand-dark:#4338ca; --ink:#172033; --muted:#667085; --line:#e7eaf0; }
+  body { background: radial-gradient(circle at top right,#eef2ff 0,transparent 30%),#f7f8fc; color:var(--ink); font-family:"Noto Sans Thai",Inter,ui-sans-serif,system-ui,sans-serif; font-size:14px; }
+  header { position:sticky; top:0; z-index:40; padding:16px max(24px,calc((100vw - 1500px)/2)); border-color:rgba(226,232,240,.8); background:rgba(255,255,255,.88); backdrop-filter:blur(18px); box-shadow:0 1px 2px rgba(16,24,40,.03); }
+  header h1 { font-size:17px; letter-spacing:-.02em; }
+  .brand-mark { width:38px; height:38px; display:grid; place-items:center; color:#fff; background:linear-gradient(135deg,#6366f1,#4338ca); border-radius:12px; box-shadow:0 8px 18px rgba(79,70,229,.25); }
+  .brand-copy small { display:block; margin-top:1px; color:#98a2b3; font-size:11px; font-weight:500; }
+  .tag-eyebrow { color:#4338ca; background:#eef2ff; border:1px solid #e0e7ff; border-radius:999px; padding:4px 9px; }
+  .layout { grid-template-columns:290px minmax(0,1fr); max-width:1500px; margin:28px auto; gap:24px; padding:0 24px 40px; }
+  aside { gap:16px; }
+  .sidebar-box,.metric-card,.workspace-header,.task-card,.cal-grid { border-color:var(--line); box-shadow:0 1px 3px rgba(16,24,40,.04),0 10px 30px rgba(16,24,40,.025); }
+  .sidebar-box { border-radius:16px; padding:18px; }
+  .box-title { color:#98a2b3; font-size:10px; letter-spacing:.12em; margin-bottom:14px; }
+  .filter-group { gap:6px; }
+  .filter-btn { min-height:42px; padding:9px 11px; border-radius:10px; color:#667085; }
+  .filter-btn span:first-child { display:flex; align-items:center; gap:9px; }
+  .filter-btn:hover { background:#f8f9fc; color:#344054; }
+  .filter-btn.active { color:#4338ca; background:#eef2ff; border-left:0; border-radius:10px; font-weight:700; }
+  .badge-count { min-width:24px; text-align:center; color:#667085; background:#f2f4f7; }
+  .filter-btn.active .badge-count { color:#4338ca; background:#fff; }
+  .form-stack { gap:13px; }
+  .form-group { gap:6px; }
+  .form-group label { color:#475467; font-size:12px; }
+  input,select,textarea { border-color:#dfe3eb; border-radius:10px; padding:10px 12px; min-height:42px; transition:.18s ease; }
+  input:focus,select:focus { border-color:#818cf8; box-shadow:0 0 0 3px rgba(99,102,241,.12); }
+  button { transition:.18s ease; }
+  button.primary,button.action-btn,button.inline-add-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; color:#fff; background:linear-gradient(135deg,#6366f1,#4f46e5); box-shadow:0 5px 12px rgba(79,70,229,.18); }
+  button.primary { min-height:44px; border-radius:10px; }
+  button.primary:hover,button.action-btn:hover,button.inline-add-btn:hover { background:linear-gradient(135deg,#4f46e5,#4338ca); transform:translateY(-1px); }
+  button.action-btn,button.danger-btn { border-radius:8px; padding:7px 11px; }
+  button.danger-btn { border-color:#fee4e2; background:#fff; color:#d92d20; }
+  main { gap:18px; }
+  .dashboard-grid { gap:14px; }
+  .metric-card { position:relative; overflow:hidden; min-height:112px; border-left:0 !important; border-radius:16px; padding:17px; }
+  .metric-card::after { content:""; position:absolute; right:-18px; bottom:-24px; width:80px; height:80px; border-radius:999px; background:#eef2ff; }
+  .metric-card .label { color:#667085; font-size:12px; }
+  .metric-card .val { position:relative; z-index:1; font-size:29px; letter-spacing:-.04em; }
+  .workspace-header { border-radius:14px; padding:10px 12px 10px 16px; }
+  .view-switcher { padding:4px; border-radius:10px; background:#f2f4f7; }
+  .view-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border-radius:7px; color:#667085; }
+  .view-btn.active { color:#4338ca; box-shadow:0 1px 4px rgba(16,24,40,.08); }
+  .list-container { gap:14px; }
+  .task-card { border-radius:16px; padding:18px; gap:14px; transition:.2s ease; }
+  .task-card:hover { transform:translateY(-2px); box-shadow:0 12px 28px rgba(16,24,40,.08); }
+  .card-title { font-size:15px; color:#1d2939; }
+  .tag { border-radius:999px; padding:4px 9px; }
+  .stepper-wrapper { border-color:#eaecf0; border-radius:12px; background:#fafbfc; padding:13px; }
+  .step-node { width:28px; height:28px; border-radius:8px; }
+  .step-node.active-now { background:#4f46e5; border-color:#4f46e5; box-shadow:0 0 0 4px #e0e7ff; }
+  .kanban-grid { gap:14px; }
+  .kanban-col { background:#f1f3f7; border:1px solid #e4e7ec; border-radius:14px; padding:12px; }
+  .col-title { padding:3px 3px 10px; border:0; color:#475467; }
+  .kb-card { border-color:#e4e7ec; border-radius:11px; padding:12px; margin-bottom:9px; box-shadow:0 1px 3px rgba(16,24,40,.05); }
+  .kb-card:hover { border-color:#c7d2fe; box-shadow:0 7px 18px rgba(79,70,229,.09); }
+  .cal-grid { border-radius:16px; padding:14px; gap:6px; }
+  .cal-day-cell { border-color:#eaecf0; border-radius:9px; background:#fcfcfd; padding:7px; scrollbar-width:thin; }
+  .cal-item { color:#4338ca; background:#eef2ff; border-radius:6px; padding:4px 6px; }
+  .overlay { background:rgba(15,23,42,.5); backdrop-filter:blur(5px); }
+  .modal { width:680px; border:1px solid rgba(255,255,255,.7); border-radius:18px; padding:22px; box-shadow:0 24px 60px rgba(15,23,42,.2); }
+  .modal-step-row { background:#fafbfc; border-color:#e4e7ec; border-radius:11px; padding:11px 13px; }
+  .lucide { width:16px; height:16px; stroke-width:1.9; flex:none; }
+  .auth-overlay { position:fixed; inset:0; z-index:200; display:none; place-items:center; padding:20px; background:radial-gradient(circle at 15% 10%,#c7d2fe 0,transparent 34%),linear-gradient(145deg,#f8fafc,#eef2ff); }
+  .auth-overlay.open { display:grid; }
+  .auth-card { width:min(440px,100%); padding:30px; background:rgba(255,255,255,.94); border:1px solid rgba(255,255,255,.85); border-radius:24px; box-shadow:0 28px 70px rgba(67,56,202,.17); backdrop-filter:blur(20px); }
+  .auth-logo { width:54px; height:54px; display:grid; place-items:center; margin-bottom:20px; color:#fff; background:linear-gradient(135deg,#6366f1,#4338ca); border-radius:16px; box-shadow:0 12px 25px rgba(79,70,229,.28); }
+  .auth-logo .lucide { width:25px; height:25px; }
+  .auth-title { font-size:24px; line-height:1.25; letter-spacing:-.03em; }
+  .auth-subtitle { margin:7px 0 23px; color:#667085; }
+  .auth-form { display:flex; flex-direction:column; gap:14px; }
+  .auth-error { display:none; padding:10px 12px; color:#b42318; background:#fef3f2; border:1px solid #fee4e2; border-radius:10px; font-size:12px; }
+  .auth-error.show { display:block; }
+  .auth-switch { margin-top:18px; text-align:center; color:#667085; font-size:12px; }
+  .auth-switch button { border:0; background:transparent; color:#4f46e5; font-weight:700; cursor:pointer; }
+  .google-btn { width:100%; min-height:44px; display:flex; align-items:center; justify-content:center; gap:9px; margin-bottom:16px; color:#344054; background:#fff; border:1px solid #d0d5dd; border-radius:10px; font-weight:700; cursor:pointer; box-shadow:0 1px 2px rgba(16,24,40,.04); }
+  .google-btn:hover { background:#f9fafb; border-color:#98a2b3; transform:translateY(-1px); }
+  .auth-divider { display:flex; align-items:center; gap:10px; margin-bottom:16px; color:#98a2b3; font-size:11px; }
+  .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#e4e7ec; }
+  .user-menu { display:none; align-items:center; gap:9px; }
+  .user-menu.show { display:flex; }
+  .user-email { max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#475467; font-size:12px; }
+  .logout-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 9px; color:#475467; background:#fff; border:1px solid #e4e7ec; border-radius:9px; cursor:pointer; }
+  .admin-btn { display:none; align-items:center; gap:6px; padding:7px 9px; color:#4338ca; background:#eef2ff; border:1px solid #c7d2fe; border-radius:9px; cursor:pointer; font-weight:700; }
+  .admin-btn.show { display:inline-flex; }
+  .role-badge { display:inline-flex; padding:3px 8px; border-radius:999px; font-size:10px; font-weight:800; }
+  .role-badge.admin { color:#4338ca; background:#eef2ff; }
+  .role-badge.user { color:#475467; background:#f2f4f7; }
+  .user-table { width:100%; border-collapse:collapse; }
+  .user-table th,.user-table td { padding:11px 8px; border-bottom:1px solid #eaecf0; text-align:left; }
+  .user-table th { color:#667085; font-size:11px; }
+  .user-table td { color:#344054; font-size:12px; }
+  #userModal .modal { width:820px; }
+  #userListArea { overflow-x:auto; }
+  .user-table { min-width:680px; }
+  .approval-btn { min-width:92px; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:800; }
+  .approval-btn.approve { color:#fff; background:#16a34a; }
+  .approval-btn.revoke { color:#b42318; background:#fff; border:1px solid #fda29b; }
+  .approval-btn:disabled { cursor:not-allowed; opacity:.6; }
+  .approval-status { display:block; margin-top:4px; font-size:10px; font-weight:700; }
+  .approval-status.pending { color:#b54708; }
+  .approval-status.approved { color:#067647; }
+  .admin-section { padding-top:16px; margin-top:8px; border-top:1px solid #e4e7ec; max-height:42vh; overflow-y:auto; padding-right:4px; }
+  .type-form { display:grid; grid-template-columns:1fr 1.5fr 1fr auto auto; gap:8px; align-items:end; margin:12px 0; }
+  .type-form .form-group { gap:4px; }
+  .type-list { display:flex; flex-direction:column; gap:7px; }
+  .type-row { display:grid; grid-template-columns:1fr 1.6fr 1fr auto auto; gap:8px; align-items:center; padding:9px; border:1px solid #eaecf0; border-radius:9px; }
+  @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
+  @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
+</style>
+</head>
+<body>
+
+<div class="auth-overlay" id="authOverlay">
+  <section class="auth-card" aria-labelledby="authTitle">
+    <div class="auth-logo"><i data-lucide="shield-check"></i></div>
+    <h2 class="auth-title" id="authTitle">เข้าสู่ระบบ</h2>
+    <p class="auth-subtitle" id="authSubtitle">เข้าสู่ Alita Task Workspace เพื่อจัดการงานของคุณ</p>
+    <button class="google-btn" type="button" onclick="loginWithGoogle()"><i data-lucide="chrome"></i><span>เข้าสู่ระบบด้วย Google</span></button>
+    <div class="auth-divider">หรือใช้อีเมล</div>
+    <form class="auth-form" id="authForm" onsubmit="submitAuth(event)">
+      <div class="form-group"><label for="authEmail">อีเมล</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com" required></div>
+      <div class="form-group"><label for="authPassword">รหัสผ่าน</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร" required></div>
+      <div class="auth-error" id="authMessage"></div>
+      <button class="primary" id="authSubmit" type="submit"><i data-lucide="log-in"></i><span>เข้าสู่ระบบ</span></button>
+    </form>
+    <div class="auth-switch"><span id="authSwitchText">ยังไม่มีบัญชี?</span> <button type="button" onclick="toggleAuthMode()" id="authSwitchButton">สมัครสมาชิก</button></div>
+  </section>
+</div>
+
+<div class="auth-overlay" id="approvalOverlay">
+  <section class="auth-card" aria-labelledby="approvalTitle">
+    <div class="auth-logo"><i data-lucide="clock-3"></i></div>
+    <h2 class="auth-title" id="approvalTitle">รอผู้ดูแลระบบอนุมัติ</h2>
+    <p class="auth-subtitle">บัญชี Google ของคุณเข้าสู่ระบบสำเร็จแล้ว แต่ยังไม่สามารถใช้ Workspace ได้จนกว่า Admin จะอนุมัติ</p>
+    <div class="auth-error show" style="color:#92400e;background:#fffbeb;">กรุณาติดต่อผู้ดูแลระบบ แล้วเข้าสู่ระบบใหม่หลังได้รับการอนุมัติ</div>
+    <button class="logout-btn" type="button" onclick="logoutUser()" style="width:100%;justify-content:center;"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button>
+  </section>
+</div>
+
+<div class="auth-overlay" id="recoveryOverlay">
+  <section class="auth-card" aria-labelledby="recoveryTitle">
+    <div class="auth-logo"><i data-lucide="database-zap"></i></div>
+    <h2 class="auth-title" id="recoveryTitle">ไม่สามารถโหลดข้อมูลผู้ใช้ได้</h2>
+    <p class="auth-subtitle" id="recoveryMessage">การเชื่อมต่อฐานข้อมูลมีปัญหา คุณสามารถออกจากระบบแล้วลองใหม่ได้</p>
+    <button class="danger-btn" type="button" onclick="logoutUser()" style="width:100%;min-height:44px;justify-content:center;display:flex;align-items:center;gap:7px;"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button>
+  </section>
+</div>
+
+<header>
+  <div style="display:flex; align-items:center; gap:11px;">
+    <span class="brand-mark"><i data-lucide="layout-dashboard"></i></span>
+    <div class="brand-copy"><h1>ALITA TASK WORKSPACE</h1><small>ระบบติดตามและขับเคลื่อนภารกิจ</small></div>
+    <span class="tag-eyebrow">Workspace</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:10px;"><span id="dbStatus" class="tag" style="background:#f2f4f7;color:#667085;">กำลังเชื่อมต่อ...</span><div id="alertBanner" style="color:#EF4444; font-weight:bold; font-size:12px;"></div><div class="user-menu" id="userMenu"><span class="role-badge user" id="currentRole">USER</span><span class="user-email" id="userEmail"></span><button class="admin-btn" id="adminButton" onclick="openUserManager()"><i data-lucide="users"></i><span>จัดการผู้ใช้</span></button><button class="logout-btn" onclick="logoutUser()"><i data-lucide="log-out"></i><span>ออกจากระบบ</span></button></div></div>
+</header>
+
+<div class="layout">
+  <!-- LEFT DASHBOARD CONTROLS -->
+  <aside>
+    <div class="sidebar-box">
+      <p class="box-title">ประเภทภารกิจ</p>
+      <div class="filter-group" id="typeFilterGroup">
+        <button class="filter-btn active" id="f-all" onclick="setFilter('all')"><span><i data-lucide="inbox"></i>งานทั้งหมด</span> <span class="badge-count" id="b-all">0</span></button>
+      </div>
+    </div>
+
+    <div class="sidebar-box">
+      <p class="box-title">กรอกแบบฟอร์ม</p>
+      <div class="form-stack">
+        <div class="form-group">
+          <label>วันที่ลงระบบงาน</label>
+          <input type="date" id="addRegisteredDate">
+        </div>
+        <div class="form-group">
+          <label>ประเภทของระบบงาน</label>
+          <select id="addType"><option value="">กำลังโหลดประเภทงาน...</option></select>
+        </div>
+        <div class="form-group">
+          <label>ชื่องาน / ชื่อโครงการหลัก</label>
+          <input type="text" id="addTitle" placeholder="พิมพ์ชื่อโครงการหรือภารกิจ...">
+        </div>
+        <div class="form-group">
+          <label>ระดับความสำคัญ</label>
+          <select id="addPriority">
+            <option value="High">High (ด่วนที่สุด)</option>
+            <option value="Medium" selected>Medium (งานปกติ)</option>
+            <option value="Low">Low (งานทั่วไป)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>วันที่ครบกำหนดส่ง (เดดไลน์)</label>
+          <input type="date" id="addDueDate">
+        </div>
+        <button class="primary" onclick="createNewTask()" style="margin-top:6px;"><i data-lucide="plus"></i>บันทึกงานใหม่</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- RIGHT DISPLAY WORKSPACE -->
+  <main>
+    <div class="dashboard-grid">
+      <div class="metric-card" style="border-left: 4px solid #0F172A;"><span class="label">งานรวมทั้งหมด</span><span class="val" id="m-all">0</span></div>
+      <div class="metric-card" style="border-left: 4px solid #475569;"><span class="label">งานโครงการพัสดุ</span><span class="val" id="m-proj">0</span></div>
+      <div class="metric-card" style="border-left: 4px solid #7E22CE;"><span class="label">งานทั่วไป</span><span class="val" id="m-gen">0</span></div>
+      <div class="metric-card" style="border-left: 4px solid #EF4444;" id="warnCard"><span class="label">⚠️ ล่าช้าวิกฤต (>7 วัน)</span><span class="val" id="m-warn">0</span></div>
+    </div>
+
+    <div class="workspace-header">
+      <div style="font-weight:700;" id="viewTitle">รายการขับเคลื่อนงาน</div>
+      <div class="view-switcher">
+        <button class="view-btn active" id="v-list" onclick="setView('list')"><i data-lucide="list"></i>List View</button>
+        <button class="view-btn" id="v-kanban" onclick="setView('kanban')"><i data-lucide="columns-3"></i>Kanban Board</button>
+        <button class="view-btn" id="v-calendar" onclick="setView('calendar')"><i data-lucide="calendar-days"></i>Calendar</button>
+      </div>
+    </div>
+
+    <nav class="status-filter-bar" aria-label="กรองตามสถานะการทำงาน">
+      <button class="status-filter-btn active" id="sf-all" onclick="setStatusFilter('all')"><i data-lucide="layers-3"></i>ทั้งหมด <span class="status-filter-count" id="sc-all">0</span></button>
+      <button class="status-filter-btn" id="sf-not_started" onclick="setStatusFilter('not_started')"><i data-lucide="circle"></i>ยังไม่เริ่ม <span class="status-filter-count" id="sc-not_started">0</span></button>
+      <button class="status-filter-btn" id="sf-in_progress" onclick="setStatusFilter('in_progress')"><i data-lucide="loader-circle"></i>กำลังดำเนินการ <span class="status-filter-count" id="sc-in_progress">0</span></button>
+      <button class="status-filter-btn" id="sf-completed" onclick="setStatusFilter('completed')"><i data-lucide="circle-check-big"></i>เสร็จสิ้น <span class="status-filter-count" id="sc-completed">0</span></button>
+    </nav>
+
+    <!-- VIEW PANE CONTAINER -->
+    <div id="pane-list" class="view-pane active"><div class="list-container" id="listViewArea"></div></div>
+    <div id="pane-kanban" class="view-pane">
+      <div class="kanban-grid">
+        <div class="kanban-col">
+          <div class="col-title">⚪ ยังไม่เริ่ม</div>
+          <div id="kb-zone-1"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="col-title">🟡 กำลังทำ</div>
+          <div id="kb-zone-2"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="col-title">🔵 ตรวจสอบเอกสาร</div>
+          <div id="kb-zone-3"></div>
+        </div>
+        <div class="kanban-col">
+          <div class="col-title">🟢 เสร็จสิ้น</div>
+          <div id="kb-zone-4"></div>
+        </div>
+      </div>
+    </div>
+    <div id="pane-calendar" class="view-pane">
+      <div class="calendar-toolbar">
+        <button class="logout-btn" type="button" onclick="goToToday()"><i data-lucide="calendar-check"></i>วันนี้</button>
+        <div class="calendar-month-title" id="calendarMonthTitle"></div>
+        <div class="calendar-nav">
+          <button class="logout-btn" type="button" title="เดือนก่อน" onclick="changeCalendarMonth(-1)"><i data-lucide="chevron-left"></i></button>
+          <button class="logout-btn" type="button" title="เดือนถัดไป" onclick="changeCalendarMonth(1)"><i data-lucide="chevron-right"></i></button>
+        </div>
+      </div>
+      <div class="cal-grid" id="calendarArea"></div>
+    </div>
+  </main>
+</div>
+
+<!-- DATA EXPANDED MODAL (UNLOCKED FOR ALL STEPS MODIFICATION) -->
+<div class="overlay" id="taskModal">
+  <div class="modal">
+    <div style="border-bottom: 1px solid #E2E8F0; padding-bottom:10px;">
+      <h3 id="m-title" style="font-size:15px; font-weight:700;">ชื่องาน</h3>
+      <div style="margin-top:6px; display:flex; gap:10px; align-items:center;">
+        <span style="font-size:11px; font-weight:bold;">สถานะอัตโนมัติจากรายการ:</span>
+        <select id="m-status" disabled style="width:auto; padding:2px 6px; background:#f8fafc;">
+          <option value="ยังไม่เริ่ม">ยังไม่เริ่ม</option>
+          <option value="กำลังทำ">กำลังทำ</option>
+          <option value="เสร็จสิ้น">เสร็จสิ้น</option>
+        </select>
+      </div>
+    </div>
+    
+    <!-- ฟอร์มเพิ่มขั้นตอนพิเศษ (เปิดใช้งานอิสระทั้งโครงการและงานทั่วไป) -->
+    <div id="m-add-section" style="display:flex; background:#F1F5F9; padding:8px; border-radius:6px; gap:6px; align-items:center;">
+      <input type="text" id="m-new-step-title" placeholder="เพิ่มรายละเอียดขั้นตอนย่อยใหม่เข้าสู่ลิสต์งานนี้..." style="flex:1; padding:6px 10px;">
+      <button class="inline-add-btn" onclick="addCustomStepToTask()"><i data-lucide="list-plus"></i>เพิ่มข้อ</button>
+    </div>
+
+    <div class="modal-scroll" id="m-steps-area"></div>
+    <div style="border-top:1px solid #E2E8F0; padding-top:10px; display:flex; justify-content:flex-end; gap:6px;">
+      <button class="danger-btn" onclick="closeModal()" style="border:1px solid #CBD5E1; color:#475569;">ยกเลิก</button>
+      <button class="action-btn" onclick="saveModal()"><i data-lucide="save"></i>บันทึกข้อมูลขั้นตอน</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="userModal">
+  <div class="modal">
+    <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e7ec;padding-bottom:12px;">
+      <div><h3 style="font-size:17px;font-weight:800;">จัดการและอนุมัติผู้ใช้งาน</h3><p style="font-size:12px;color:#667085;margin-top:3px;">ผู้ใช้ Google ที่รออนุมัติจะแสดงอยู่ด้านบน</p></div>
+      <button class="logout-btn" onclick="closeUserManager()"><i data-lucide="x"></i>ปิด</button>
+    </div>
+    <div class="modal-scroll" id="userListArea"></div>
+    <section class="admin-section">
+      <h3 style="font-size:15px;font-weight:800;">ประเภทของระบบงาน</h3>
+      <p style="font-size:11px;color:#667085;">เพิ่ม แก้ไข เปิด/ปิดประเภทที่ผู้ใช้เลือกตอนสร้างงาน</p>
+      <form class="type-form" onsubmit="submitTaskType(event)">
+        <div class="form-group"><label for="typeCode">รหัสภาษาอังกฤษ</label><input id="typeCode" pattern="[a-z0-9][a-z0-9_-]{1,39}" placeholder="finance" required></div>
+        <div class="form-group"><label for="typeName">ชื่อประเภท</label><input id="typeName" maxlength="100" placeholder="งานการเงิน" required></div>
+        <div class="form-group"><label for="typeTemplate">รูปแบบขั้นตอน</label><select id="typeTemplate"><option value="general">งานทั่วไป</option><option value="project">โครงการ 14 ขั้นตอน</option></select></div>
+        <label style="display:flex;align-items:center;gap:5px;padding-bottom:10px;"><input id="typeActive" type="checkbox" checked> เปิดใช้</label>
+        <button class="action-btn" type="submit"><i data-lucide="save"></i>บันทึก</button>
+      </form>
+      <div class="type-list" id="taskTypeList"></div>
+    </section>
+  </div>
+</div>
+
+<!-- Supabase client และค่าการเชื่อมต่อ: ต้องโหลดก่อน application script -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="./config.js"></script>
+<script src="./supabase-db.js?v=20260715-profile-id-fix"></script>
+<script>
+const STEPS_TEMPLATE = [
+  "1. โครงการ + บันทึกปะหน้า", "2. แต่งตั้งกรรมการ TOR", "3. จัดทำร่าง TOR", "4. ประชุมร่าง TOR",
+  "5. เห็นชอบร่าง TOR", "5.1 ขออนุมัติค่าเบิก", "6. หนังสือส่งสืบราคา", "7. ตารางใบสืบราคา",
+  "8. ประชุมกำหนดราคากลาง", "9. ตารางราคากลาง", "10. บันทึกเชิญยื่นซอง", "10.1 อนุมัติเบิกครุภัณฑ์",
+  "11. คณะกรรมการเปิดซอง", "11.1 อนุมัติเบิกค่าเปิดซอง", "12. ตรวจรับพัสดุงาน", "13. บันทึกผลตรวจรับ", "14. ขออนุมัติเบิกจ่าย"
+];
+
+const DEMO_TASKS = [
+  {
+    id: "1", type: "project", title: "โครงการพัฒนาระบบ AI Resilience สำหรับศูนย์ข้อมูลดิจิทัล Yala Smart City",
+    priority: "High", dueDate: "2026-07-15", status: "กำลังทำ",
+    subtasks: STEPS_TEMPLATE.map((n, i) => ({ name: n, checked: i < 3, note: i === 2 ? "รอปรับแก้ TOR ตามคำสั่งการรอบ 2" : "", daysSpent: i === 2 ? 9 : 0 }))
+  },
+  {
+    id: "2", type: "general", title: "สรุปโครงร่างรายงานและจัดเตรียมข้อมูลสถิติผู้เข้าชมพิพิธภัณฑ์เมืองยะลาเสนอผู้บริหาร",
+    priority: "Medium", dueDate: "2026-07-22", status: "ตรวจสอบเอกสาร",
+    subtasks: [
+      { name: "รวบรวมตัวเลขสถิติผู้เข้าชมครึ่งปีหลัง", checked: true, note: "เรียบร้อย", daysSpent: 0 },
+      { name: "จัดทำรูปเล่มและอินโฟกราฟิกนำเสนอ", checked: false, note: "กำลังจัดทำ", daysSpent: 2 }
+    ]
+  }
+];
+
+let tasks = [];
+
+let currentFilter = "all";
+let currentStatusFilter = "all";
+let currentView = "list";
+let calendarCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+let activeEditID = null;
+let editSubtasksClone = [];
+let authMode = "login";
+let currentProfile = null;
+let taskTypes = [];
+
+async function init() {
+  setDbStatus("กำลังเชื่อมต่อ...", "loading");
+  try {
+    await AlitaDB.connect();
+    const session = await AlitaDB.getSession();
+    if (session) {
+      await enterWorkspace(session);
+    } else {
+      tasks = [];
+      render();
+      openAuth();
+      setDbStatus("รอเข้าสู่ระบบ", "loading");
+    }
+  } catch (error) {
+    console.error(error);
+    tasks = [];
+    render();
+    setDbStatus("เชื่อมต่อไม่สำเร็จ", "error");
+    showAppError(error);
+    const recoveryMessage = document.getElementById("recoveryMessage");
+    recoveryMessage.textContent = `ฐานข้อมูล: ${error.message || "เกิดข้อผิดพลาด"}`;
+    document.getElementById("authOverlay").classList.remove("open");
+    document.getElementById("approvalOverlay").classList.remove("open");
+    document.getElementById("userMenu").classList.remove("show");
+    document.getElementById("recoveryOverlay").classList.add("open");
+    refreshIcons();
+  }
+}
+
+async function enterWorkspace(session) {
+  document.getElementById("recoveryOverlay").classList.remove("open");
+  currentProfile = await AlitaDB.getMyProfile();
+  if (!currentProfile.is_approved && currentProfile.role !== "admin") {
+    tasks = [];
+    render();
+    document.getElementById("authOverlay").classList.remove("open");
+    document.getElementById("userMenu").classList.remove("show");
+    document.getElementById("approvalOverlay").classList.add("open");
+    setDbStatus("รอ Admin อนุมัติ", "loading");
+    refreshIcons();
+    return;
+  }
+  document.getElementById("approvalOverlay").classList.remove("open");
+  document.getElementById("authOverlay").classList.remove("open");
+  document.getElementById("userMenu").classList.add("show");
+  document.getElementById("userEmail").textContent = session.user.email || "ผู้ใช้งาน";
+  const roleBadge = document.getElementById("currentRole");
+  roleBadge.textContent = currentProfile.role.toUpperCase();
+  roleBadge.className = `role-badge ${currentProfile.role}`;
+  document.getElementById("adminButton").classList.toggle("show", currentProfile.role === "admin");
+  document.getElementById("alertBanner").textContent = "";
+  await reloadTaskTypes();
+  await reloadTasks();
+  setDbStatus("เชื่อมต่อแล้ว", "online");
+  refreshIcons();
+}
+
+function openAuth() {
+  document.getElementById("recoveryOverlay").classList.remove("open");
+  document.getElementById("approvalOverlay").classList.remove("open");
+  document.getElementById("authOverlay").classList.add("open");
+  document.getElementById("userMenu").classList.remove("show");
+  refreshIcons();
+}
+
+function toggleAuthMode() {
+  authMode = authMode === "login" ? "signup" : "login";
+  const signup = authMode === "signup";
+  document.getElementById("authTitle").textContent = signup ? "สร้างบัญชีใหม่" : "เข้าสู่ระบบ";
+  document.getElementById("authSubtitle").textContent = signup ? "สมัครด้วยอีเมลเพื่อเริ่มจัดการงานส่วนตัว" : "เข้าสู่ Alita Task Workspace เพื่อจัดการงานของคุณ";
+  document.querySelector("#authSubmit span").textContent = signup ? "สมัครสมาชิก" : "เข้าสู่ระบบ";
+  document.getElementById("authSwitchText").textContent = signup ? "มีบัญชีอยู่แล้ว?" : "ยังไม่มีบัญชี?";
+  document.getElementById("authSwitchButton").textContent = signup ? "เข้าสู่ระบบ" : "สมัครสมาชิก";
+  document.getElementById("authPassword").autocomplete = signup ? "new-password" : "current-password";
+  setAuthMessage("");
+}
+
+function setAuthMessage(message, success = false) {
+  const el = document.getElementById("authMessage");
+  el.textContent = message;
+  el.classList.toggle("show", Boolean(message));
+  el.style.color = success ? "#027a48" : "#b42318";
+  el.style.background = success ? "#ecfdf3" : "#fef3f2";
+}
+
+async function submitAuth(event) {
+  event.preventDefault();
+  const email = document.getElementById("authEmail").value.trim();
+  const password = document.getElementById("authPassword").value;
+  const button = document.getElementById("authSubmit");
+  button.disabled = true;
+  setAuthMessage("");
+  try {
+    if (authMode === "signup") {
+      const result = await AlitaDB.signUp(email, password);
+      if (result.session) await enterWorkspace(result.session);
+      else setAuthMessage("สมัครสำเร็จ กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชีก่อนเข้าสู่ระบบ", true);
+    } else {
+      const session = await AlitaDB.signIn(email, password);
+      await enterWorkspace(session);
+    }
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(error.message || "ไม่สามารถดำเนินการได้");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+async function loginWithGoogle() {
+  if (window.location.protocol === "file:") {
+    setAuthMessage("Google Login ต้องเปิดระบบผ่าน localhost หรือเว็บไซต์ HTTPS ไม่สามารถใช้จากไฟล์โดยตรงได้");
+    return;
+  }
+  setAuthMessage("");
+  try {
+    const redirectTo = `${window.location.origin}${window.location.pathname}`;
+    await AlitaDB.signInWithGoogle(redirectTo);
+  } catch (error) {
+    console.error(error);
+    setAuthMessage(error.message || "ไม่สามารถเข้าสู่ระบบด้วย Google ได้");
+  }
+}
+
+async function logoutUser() {
+  try {
+    await AlitaDB.signOut();
+    tasks = [];
+    currentProfile = null;
+    render();
+    document.getElementById("authForm").reset();
+    openAuth();
+    setDbStatus("ออกจากระบบแล้ว", "loading");
+  } catch (error) {
+    showAppError(error);
+  }
+}
+
+async function openUserManager() {
+  if (currentProfile?.role !== "admin") return;
+  document.getElementById("userModal").classList.add("open");
+  const area = document.getElementById("userListArea");
+  area.textContent = "กำลังโหลดรายชื่อผู้ใช้...";
+  try {
+    renderUserTable(await AlitaDB.listUsers());
+    await reloadTaskTypes();
+    renderTaskTypeManager();
+  } catch (error) {
+    area.textContent = `โหลดรายชื่อไม่สำเร็จ: ${error.message}`;
+  }
+  refreshIcons();
+}
+
+function closeUserManager() {
+  document.getElementById("userModal").classList.remove("open");
+}
+
+function renderUserTable(users) {
+  const area = document.getElementById("userListArea");
+  area.textContent = "";
+  const table = document.createElement("table");
+  table.className = "user-table";
+  const head = document.createElement("thead");
+  head.innerHTML = "<tr><th>อีเมล</th><th>สถานะ</th><th>บทบาท</th><th>วันที่สมัคร</th></tr>";
+  table.appendChild(head);
+  const body = document.createElement("tbody");
+  const sortedUsers = [...users].sort((a, b) => Number(a.is_approved) - Number(b.is_approved));
+  sortedUsers.forEach(user => {
+    const row = document.createElement("tr");
+    const emailCell = document.createElement("td");
+    emailCell.textContent = user.email || "-";
+    const approvalCell = document.createElement("td");
+    const approvalButton = document.createElement("button");
+    approvalButton.className = `approval-btn ${user.is_approved ? "revoke" : "approve"}`;
+    approvalButton.textContent = user.is_approved ? "ยกเลิกอนุมัติ" : "อนุมัติผู้ใช้";
+    approvalButton.disabled = user.role === "admin";
+    approvalButton.addEventListener("click", () => changeUserApproval(user.id, !user.is_approved, approvalButton));
+    approvalCell.appendChild(approvalButton);
+    const approvalStatus = document.createElement("span");
+    approvalStatus.className = `approval-status ${user.is_approved ? "approved" : "pending"}`;
+    approvalStatus.textContent = user.role === "admin" ? "Admin อนุมัติอัตโนมัติ" : (user.is_approved ? "ใช้งานได้" : "รอการอนุมัติ");
+    approvalCell.appendChild(approvalStatus);
+    const roleCell = document.createElement("td");
+    const select = document.createElement("select");
+    select.style.minHeight = "36px";
+    select.style.padding = "6px 9px";
+    ["user", "admin"].forEach(role => {
+      const option = document.createElement("option");
+      option.value = role;
+      option.textContent = role === "admin" ? "Admin" : "User";
+      option.selected = user.role === role;
+      select.appendChild(option);
+    });
+    select.addEventListener("change", () => changeUserRole(user.id, select.value, select));
+    roleCell.appendChild(select);
+    const dateCell = document.createElement("td");
+    dateCell.textContent = user.created_at ? new Date(user.created_at).toLocaleDateString("th-TH") : "-";
+    row.append(emailCell, approvalCell, roleCell, dateCell);
+    body.appendChild(row);
+  });
+  table.appendChild(body);
+  area.appendChild(table);
+}
+
+async function changeUserApproval(userId, approved, button) {
+  button.disabled = true;
+  try {
+    await AlitaDB.setUserApproval(userId, approved);
+    renderUserTable(await AlitaDB.listUsers());
+  } catch (error) {
+    alert(`เปลี่ยนสถานะอนุมัติไม่สำเร็จ: ${error.message}`);
+    renderUserTable(await AlitaDB.listUsers());
+  }
+}
+
+async function changeUserRole(userId, role, select) {
+  select.disabled = true;
+  try {
+    await AlitaDB.setUserRole(userId, role);
+    renderUserTable(await AlitaDB.listUsers());
+  } catch (error) {
+    alert(`เปลี่ยนสิทธิ์ไม่สำเร็จ: ${error.message}`);
+    renderUserTable(await AlitaDB.listUsers());
+  }
+}
+
+async function reloadTaskTypes() {
+  taskTypes = await AlitaDB.listTaskTypes();
+  renderTaskTypeControls();
+}
+
+function getTaskType(code) {
+  return taskTypes.find(type => type.code === code) || {
+    code,
+    name: code,
+    template_kind: code === "project" ? "project" : "general",
+    is_active: false
+  };
+}
+
+function renderTaskTypeControls() {
+  const select = document.getElementById("addType");
+  const previousValue = select.value;
+  select.textContent = "";
+  taskTypes.filter(type => type.is_active).forEach(type => {
+    const option = document.createElement("option");
+    option.value = type.code;
+    option.textContent = `${type.template_kind === "project" ? "📦" : "📝"} ${type.name}`;
+    select.appendChild(option);
+  });
+  if (taskTypes.some(type => type.is_active && type.code === previousValue)) select.value = previousValue;
+  if (!select.options.length) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "ยังไม่มีประเภทงานที่เปิดใช้งาน";
+    select.appendChild(option);
+  }
+
+  const group = document.getElementById("typeFilterGroup");
+  group.textContent = "";
+  const typesForFilter = taskTypes.filter(type => type.is_active || tasks.some(task => task.type === type.code));
+  [{ code: "all", name: "งานทั้งหมด" }, ...typesForFilter].forEach(type => {
+    const button = document.createElement("button");
+    button.className = `filter-btn ${currentFilter === type.code ? "active" : ""}`;
+    button.id = `f-${type.code}`;
+    button.addEventListener("click", () => setFilter(type.code));
+    const label = document.createElement("span");
+    label.textContent = type.name;
+    const count = document.createElement("span");
+    count.className = "badge-count";
+    count.id = `b-${type.code}`;
+    count.textContent = "0";
+    button.append(label, count);
+    group.appendChild(button);
+  });
+  refreshIcons();
+}
+
+function renderTaskTypeManager() {
+  const area = document.getElementById("taskTypeList");
+  area.textContent = "";
+  taskTypes.forEach(type => {
+    const row = document.createElement("div");
+    row.className = "type-row";
+    const code = document.createElement("code");
+    code.textContent = type.code;
+    const name = document.createElement("strong");
+    name.textContent = type.name;
+    const kind = document.createElement("span");
+    kind.textContent = type.template_kind === "project" ? "โครงการ 14 ขั้นตอน" : "งานทั่วไป";
+    const edit = document.createElement("button");
+    edit.className = "logout-btn";
+    edit.textContent = type.is_active ? "แก้ไข · เปิดใช้" : "แก้ไข · ปิดอยู่";
+    edit.addEventListener("click", () => editTaskType(type.code));
+    const remove = document.createElement("button");
+    remove.className = "danger-btn";
+    remove.textContent = "ลบ";
+    remove.disabled = ["project", "general"].includes(type.code);
+    remove.addEventListener("click", () => removeTaskType(type.code));
+    row.append(code, name, kind, edit, remove);
+    area.appendChild(row);
+  });
+}
+
+function editTaskType(code) {
+  const type = getTaskType(code);
+  document.getElementById("typeCode").value = type.code;
+  document.getElementById("typeCode").readOnly = true;
+  document.getElementById("typeName").value = type.name;
+  document.getElementById("typeTemplate").value = type.template_kind;
+  document.getElementById("typeActive").checked = type.is_active;
+  document.getElementById("typeName").focus();
+}
+
+async function submitTaskType(event) {
+  event.preventDefault();
+  const submit = event.submitter;
+  submit.disabled = true;
+  try {
+    await AlitaDB.saveTaskType({
+      code: document.getElementById("typeCode").value.trim().toLowerCase(),
+      name: document.getElementById("typeName").value.trim(),
+      templateKind: document.getElementById("typeTemplate").value,
+      isActive: document.getElementById("typeActive").checked
+    });
+    event.target.reset();
+    document.getElementById("typeActive").checked = true;
+    document.getElementById("typeCode").readOnly = false;
+    await reloadTaskTypes();
+    renderTaskTypeManager();
+    render();
+  } catch (error) {
+    alert(`บันทึกประเภทงานไม่สำเร็จ: ${error.message}`);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function removeTaskType(code) {
+  const type = getTaskType(code);
+  if (!confirm(`ยืนยันการลบประเภทงาน\n\n“${type.name}”\n\nลบได้เฉพาะประเภทที่ยังไม่มีงานใช้งานอยู่`)) return;
+  try {
+    await AlitaDB.deleteTaskType(code);
+    if (currentFilter === code) currentFilter = "all";
+    await reloadTaskTypes();
+    renderTaskTypeManager();
+    render();
+  } catch (error) {
+    alert(`ลบประเภทงานไม่สำเร็จ: ${error.message}`);
+  }
+}
+
+async function reloadTasks() {
+  tasks = await AlitaDB.loadTasks();
+  renderTaskTypeControls();
+  render();
+}
+
+function setDbStatus(text, state) {
+  const el = document.getElementById("dbStatus");
+  el.textContent = text;
+  const colors = state === "online" ? ["#ecfdf3", "#027a48"] : state === "error" ? ["#fef3f2", "#b42318"] : ["#eef2ff", "#4338ca"];
+  el.style.background = colors[0];
+  el.style.color = colors[1];
+}
+
+function showAppError(error) {
+  const message = error?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
+  document.getElementById("alertBanner").textContent = `ฐานข้อมูล: ${message}`;
+}
+
+function getLocalDateISO() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function render() {
+  updateMetrics();
+  renderListView();
+  renderKanbanView();
+  renderCalendarView();
+  refreshIcons();
+}
+
+function refreshIcons() {
+  if (window.lucide) lucide.createIcons({ attrs: { 'aria-hidden': 'true' } });
+}
+
+function updateMetrics() {
+  const total = tasks.length;
+  const proj = tasks.filter(t => getTaskType(t.type).template_kind === 'project').length;
+  const gen = tasks.filter(t => getTaskType(t.type).template_kind === 'general').length;
+  
+  let delayCount = 0;
+  tasks.forEach(t => {
+    const active = t.subtasks.find(s => !s.checked);
+    if (active && active.daysSpent > 7) delayCount++;
+  });
+
+  document.getElementById("m-all").textContent = total;
+  document.getElementById("m-proj").textContent = proj;
+  document.getElementById("m-gen").textContent = gen;
+  document.getElementById("m-warn").textContent = delayCount;
+
+  document.getElementById("b-all").textContent = total;
+  taskTypes.forEach(type => {
+    const badge = document.getElementById(`b-${type.code}`);
+    if (badge) badge.textContent = tasks.filter(task => task.type === type.code).length;
+  });
+  const statusCounts = { not_started: 0, in_progress: 0, completed: 0 };
+  const statusBase = currentFilter === "all" ? tasks : tasks.filter(t => t.type === currentFilter);
+  statusBase.forEach(t => statusCounts[getProgressState(t.subtasks)]++);
+  document.getElementById("sc-all").textContent = statusBase.length;
+  Object.entries(statusCounts).forEach(([key, count]) => {
+    document.getElementById(`sc-${key}`).textContent = count;
+  });
+
+  const banner = document.getElementById("alertBanner");
+  if (delayCount > 0) {
+    banner.textContent = `⚠️ แจ้งเตือน: มีงานโครงการค้างสเต็ปเกิน 7 วันจำนวน ${delayCount} โครงการหลัก!`;
+    document.getElementById("warnCard").style.background = "#FEE2E2";
+  } else {
+    banner.textContent = "";
+    document.getElementById("warnCard").style.background = "#fff";
+  }
+}
+
+function getFilteredTasks() {
+  return tasks.filter(t => {
+    const typeMatches = currentFilter === "all" || t.type === currentFilter;
+    const statusMatches = currentStatusFilter === "all" || getProgressState(t.subtasks) === currentStatusFilter;
+    return typeMatches && statusMatches;
+  });
+}
+
+function getProgressState(subtasks = []) {
+  if (!subtasks.length) return "not_started";
+  const checkedCount = subtasks.filter(step => step.checked).length;
+  if (checkedCount === 0) return "not_started";
+  if (checkedCount === subtasks.length) return "completed";
+  return "in_progress";
+}
+
+function getProgressStatus(subtasks = []) {
+  const labels = { not_started: "ยังไม่เริ่ม", in_progress: "กำลังทำ", completed: "เสร็จสิ้น" };
+  return labels[getProgressState(subtasks)];
+}
+
+function getProgressLabel(subtasks = []) {
+  const labels = { not_started: "ยังไม่เริ่ม", in_progress: "กำลังดำเนินการ", completed: "เสร็จสิ้น" };
+  return labels[getProgressState(subtasks)];
+}
+
+function renderListView() {
+  const area = document.getElementById("listViewArea");
+  const data = getFilteredTasks();
+  area.innerHTML = "";
+
+  if (data.length === 0) {
+    area.innerHTML = `<div style='padding:24px; text-align:center; color:#94A3B8; background:#fff; border:1px dashed #E2E8F0; border-radius:8px;'>ไม่มีข้อมูลรายการงานในหมวดนี้</div>`;
+    return;
+  }
+
+  data.forEach(t => {
+    const typeDefinition = getTaskType(t.type);
+    const activeStep = t.subtasks.find(s => !s.checked);
+    const isDelay = activeStep && activeStep.daysSpent > 7;
+
+    let stepperHtml = t.subtasks.map((st, i) => {
+      if (typeDefinition.template_kind === 'project' && st.name.includes(".1")) return "";
+      let cls = "step-node";
+      if (st.checked) cls += " done";
+      if (activeStep && activeStep.name === st.name) {
+        cls += " active-now";
+        if (isDelay) cls += " alert";
+      }
+      // แยกหลักชื่อแสดงผลตัวเลขกล่องย่อยให้สวยงาม
+      const label = typeDefinition.template_kind === 'project' ? (st.name.includes(".") ? st.name.split(".")[0] : i + 1) : i + 1;
+      return `<div class="${cls}" title="${st.name}">${label}</div>`;
+    }).filter(h => h !== "").join('<span class="step-arrow">➔</span>');
+
+    const card = document.createElement("div");
+    card.className = "task-card";
+    card.innerHTML = `
+      <div>
+        <div class="card-title">${t.title}</div>
+        <div class="badge-row">
+          <span class="tag ${t.priority.toLowerCase()}">${t.priority}</span>
+          <span class="tag ${typeDefinition.template_kind}">${typeDefinition.name}</span>
+          <span class="tag status">${getProgressLabel(t.subtasks)}</span>
+          ${t.registeredDate ? `<span class="tag" style="background:#ecfdf3; color:#027a48;">ลงระบบ ${t.registeredDate}</span>` : ''}
+          ${t.dueDate ? `<span class="tag" style="background:#F1F5F9; color:#475569;">กำหนดส่ง ${t.dueDate}</span>` : ''}
+          ${isDelay ? `<span class="tag warning">⚠️ ค้างขั้นตอนปัจจุบันมาแล้ว ${activeStep.daysSpent} วัน</span>` : ''}
+        </div>
+      </div>
+      <div class="stepper-wrapper">
+        <div class="stepper-title">📌 ผังลำดับการดำเนินงานจริง (Milestone Stepper Tracker)</div>
+        <div class="stepper">${stepperHtml || '<span style="color:#94A3B8; font-size:12px;">ยังไม่มีขั้นตอนเพิ่มเข้ามา คลิกแก้ไขรายละเอียดเพื่อเพิ่มข้อได้ครับ</span>'}</div>
+        <span class="step-note-preview"><strong>ขั้นตอนที่กำลังทำ:</strong> ${activeStep ? activeStep.name : 'สำเร็จเรียบร้อย'} ${activeStep && activeStep.note ? `(${activeStep.note})` : ''}</span>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn" onclick="openModal('${t.id}')"><i data-lucide="square-pen"></i>อัปเดตรายละเอียด</button>
+        <button class="danger-btn" onclick="deleteTask('${t.id}')"><i data-lucide="trash-2"></i>ลบ</button>
+      </div>
+    `;
+    area.appendChild(card);
+  });
+}
+
+function renderKanbanView() {
+  const zones = ["ยังไม่เริ่ม", "กำลังทำ", "ตรวจสอบเอกสาร", "เสร็จสิ้น"];
+  zones.forEach((z, i) => document.getElementById(`kb-zone-${i+1}`).innerHTML = "");
+
+  getFilteredTasks().forEach(t => {
+    const idx = zones.indexOf(getProgressStatus(t.subtasks));
+    if (idx === -1) return;
+
+    const div = document.createElement("div");
+    div.className = "kb-card";
+    div.onclick = () => openModal(t.id);
+    div.innerHTML = `
+      <div class="kb-card-title">${t.title}</div>
+      <div style="font-size:11px; color:#94A3B8; display:flex; justify-content:space-between; margin-top:4px;">
+         <span>📋 ข้อสำเร็จ: ${t.subtasks.filter(s=>s.checked).length}/${t.subtasks.length}</span>
+         <span style="font-weight:bold;">${t.priority}</span>
+      </div>
+    `;
+    document.getElementById(`kb-zone-${idx+1}`).appendChild(div);
+  });
+}
+
+function renderCalendarView() {
+  const area = document.getElementById("calendarArea");
+  area.innerHTML = "";
+
+  const year = calendarCursor.getFullYear();
+  const month = calendarCursor.getMonth();
+  document.getElementById("calendarMonthTitle").textContent = new Intl.DateTimeFormat("th-TH", {
+    month: "long", year: "numeric"
+  }).format(calendarCursor);
+
+  const headers = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+  headers.forEach(h => {
+    const d = document.createElement("div");
+    d.className = "cal-header-cell";
+    d.textContent = h;
+    area.appendChild(d);
+  });
+
+  const data = getFilteredTasks();
+  const firstDayOffset = new Date(year, month, 1).getDay();
+  const gridStart = new Date(year, month, 1 - firstDayOffset);
+  const todayKey = getDateKey(new Date());
+
+  for (let i = 0; i < 42; i++) {
+    const cellDate = new Date(gridStart);
+    cellDate.setDate(gridStart.getDate() + i);
+    const dateKey = getDateKey(cellDate);
+    const cell = document.createElement("div");
+    cell.className = "cal-day-cell";
+    if (cellDate.getMonth() !== month) cell.classList.add("outside-month");
+    if (dateKey === todayKey) cell.classList.add("today");
+    cell.innerHTML = `<span class="cal-day-num">${cellDate.getDate()}</span>`;
+
+    const matchDay = data.filter(t => t.dueDate === dateKey);
+    matchDay.forEach(t => {
+      const item = document.createElement("div");
+      item.className = "cal-item";
+      item.textContent = t.title;
+      item.onclick = (e) => { e.stopPropagation(); openModal(t.id); };
+      cell.appendChild(item);
+    });
+    area.appendChild(cell);
+  }
+}
+
+function getDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function changeCalendarMonth(offset) {
+  calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + offset, 1);
+  renderCalendarView();
+  refreshIcons();
+}
+
+function goToToday() {
+  const today = new Date();
+  calendarCursor = new Date(today.getFullYear(), today.getMonth(), 1);
+  renderCalendarView();
+  refreshIcons();
+}
+
+function setFilter(val) {
+  currentFilter = val;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById(`f-${val}`).classList.add("active");
+  render();
+}
+
+function setStatusFilter(val) {
+  currentStatusFilter = val;
+  document.querySelectorAll(".status-filter-btn").forEach(button => button.classList.remove("active"));
+  document.getElementById(`sf-${val}`).classList.add("active");
+  render();
+}
+
+function setView(val) {
+  currentView = val;
+  document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById(`v-${val}`).classList.add("active");
+
+  document.querySelectorAll(".view-pane").forEach(p => p.classList.remove("active"));
+  document.getElementById(`pane-${val}`).classList.add("active");
+  render();
+}
+
+async function createNewTask() {
+  const title = document.getElementById("addTitle").value.trim();
+  const type = document.getElementById("addType").value;
+  const p = document.getElementById("addPriority").value;
+  const due = document.getElementById("addDueDate").value;
+  const registeredDate = document.getElementById("addRegisteredDate").value;
+
+  if (!title) { alert("กรุณาใส่ชื่องานก่อนบันทึกครับ"); return; }
+  if (!type) { alert("ยังไม่มีประเภทงานที่เปิดใช้งาน กรุณาติดต่อ Admin"); return; }
+
+  let steps = [];
+  if (getTaskType(type).template_kind === 'project') {
+    steps = STEPS_TEMPLATE.map(name => ({ name, checked: false, note: "", daysSpent: 0 }));
+  } else {
+    steps = [
+      { name: "ขั้นเตรียมเอกสารนโยบายตั้งต้น", checked: false, note: "", daysSpent: 0 },
+      { name: "ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร", checked: false, note: "", daysSpent: 0 }
+    ];
+  }
+
+  const button = document.querySelector("button.primary");
+  if (button) button.disabled = true;
+  try {
+    await AlitaDB.createTask({ type, title, priority: p, dueDate: due || null, registeredDate: registeredDate || getLocalDateISO(), status: "ยังไม่เริ่ม", subtasks: steps });
+    document.getElementById("addTitle").value = "";
+    document.getElementById("addDueDate").value = "";
+    document.getElementById("addRegisteredDate").value = getLocalDateISO();
+    await reloadTasks();
+  } catch (error) {
+    console.error(error);
+    showAppError(error);
+    alert(`บันทึกงานไม่สำเร็จ: ${error.message}`);
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function openModal(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  activeEditID = id;
+  document.getElementById("m-title").textContent = t.title;
+  document.getElementById("m-status").value = t.status;
+  editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks));
+  
+  renderModalSteps();
+  document.getElementById("taskModal").classList.add("open");
+  refreshIcons();
+}
+
+function renderModalSteps() {
+  const area = document.getElementById("m-steps-area");
+  area.innerHTML = "";
+  document.getElementById("m-status").value = getProgressStatus(editSubtasksClone);
+
+  editSubtasksClone.forEach((st, idx) => {
+    const row = document.createElement("div");
+    row.className = "modal-step-row";
+    row.innerHTML = `
+      <div class="modal-step-top">
+        <input type="checkbox" id="m-chk-${idx}" ${st.checked ? 'checked' : ''} onchange="toggleStepCheck(${idx})">
+        <label for="m-chk-${idx}">${st.name}</label>
+        ${!st.checked && st.daysSpent > 0 ? `<span style="font-size:11px; font-weight:bold; color:${st.daysSpent > 7 ? '#EF4444' : '#475569'}">ค้างมาแล้ว ${st.daysSpent} วัน</span>` : ''}
+        
+        <div class="step-order-controls" aria-label="จัดลำดับหัวข้อ">
+          <button class="step-order-btn" type="button" title="เลื่อนขึ้น" aria-label="เลื่อนหัวข้อขึ้น" onclick="moveStep(${idx}, -1)" ${idx === 0 ? 'disabled' : ''}><i data-lucide="arrow-up"></i></button>
+          <button class="step-order-btn" type="button" title="เลื่อนลง" aria-label="เลื่อนหัวข้อลง" onclick="moveStep(${idx}, 1)" ${idx === editSubtasksClone.length - 1 ? 'disabled' : ''}><i data-lucide="arrow-down"></i></button>
+          <button class="step-delete-btn" type="button" onclick="deleteStepFromClone(${idx})">ลบ</button>
+        </div>
+      </div>
+      <div class="modal-step-note">
+        <span style="font-size:11px; color:#475569;">โน้ตย่อย:</span>
+        <input type="text" value="${st.note || ''}" placeholder="พิมพ์หมายเหตุในสเต็ปนี้..." onchange="updateStepNote(${idx}, this.value)">
+      </div>
+    `;
+    area.appendChild(row);
+  });
+  refreshIcons();
+}
+
+// ฟังก์ชันเพิ่มขั้นตอนใหม่ให้กับงานทุกประเภท
+function addCustomStepToTask() {
+  const input = document.getElementById("m-new-step-title");
+  const txt = input.value.trim();
+  if(!txt) { alert("กรุณากรอกชื่องานย่อยที่จะเพิ่มก่อนครับ"); return; }
+  
+  editSubtasksClone.push({ name: txt, checked: false, note: "", daysSpent: 0 });
+  input.value = "";
+  renderModalSteps();
+}
+
+// ฟังก์ชันลบสเต็ปย่อยออกจากร่างสัญญางานชั่วคราว
+function deleteStepFromClone(idx) {
+  const step = editSubtasksClone[idx];
+  if (!step) return;
+  const confirmed = confirm(`ยืนยันการลบหัวข้อย่อย\n\n“${step.name}”\n\nหัวข้อนี้จะถูกลบจริงเมื่อคุณกดบันทึกการแก้ไข`);
+  if (!confirmed) return;
+  editSubtasksClone.splice(idx, 1);
+  renderModalSteps();
+}
+
+function moveStep(idx, direction) {
+  const targetIdx = idx + direction;
+  if (targetIdx < 0 || targetIdx >= editSubtasksClone.length) return;
+  [editSubtasksClone[idx], editSubtasksClone[targetIdx]] = [editSubtasksClone[targetIdx], editSubtasksClone[idx]];
+  renderModalSteps();
+  const movedRow = document.querySelectorAll("#m-steps-area .modal-step-row")[targetIdx];
+  movedRow?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function toggleStepCheck(idx) {
+  editSubtasksClone[idx].checked = !editSubtasksClone[idx].checked;
+  if (editSubtasksClone[idx].checked) editSubtasksClone[idx].daysSpent = 0;
+  renderModalSteps();
+}
+
+function updateStepNote(idx, val) {
+  editSubtasksClone[idx].note = val;
+}
+
+async function saveModal() {
+  const t = tasks.find(x => x.id === activeEditID);
+  if (t) {
+    t.status = getProgressStatus(editSubtasksClone);
+    t.subtasks = editSubtasksClone;
+    try {
+      await AlitaDB.updateTask(t);
+      closeModal();
+      await reloadTasks();
+    } catch (error) {
+      console.error(error);
+      showAppError(error);
+      alert(`บันทึกการแก้ไขไม่สำเร็จ: ${error.message}`);
+    }
+  }
+}
+
+function closeModal() {
+  document.getElementById("taskModal").classList.remove("open");
+  document.getElementById("m-new-step-title").value = "";
+  activeEditID = null;
+}
+
+async function deleteTask(id) {
+  const task = tasks.find(item => item.id === id);
+  if (!task) return;
+  const confirmed = confirm(`ยืนยันการลบงาน\n\n“${task.title}”\n\nรายการย่อยและหมายเหตุทั้งหมดของงานนี้จะถูกลบถาวร`);
+  if (confirmed) {
+    try {
+      await AlitaDB.deleteTask(id);
+      await reloadTasks();
+    } catch (error) {
+      console.error(error);
+      showAppError(error);
+      alert(`ลบงานไม่สำเร็จ: ${error.message}`);
+    }
+  }
+}
+
+window.onload = () => {
+  document.getElementById("addRegisteredDate").value = getLocalDateISO();
+  init();
+};
+</script>
+</body>
+</html>

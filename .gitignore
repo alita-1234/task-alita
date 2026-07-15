@@ -1,0 +1,14 @@
+# Local Supabase configuration
+config.js
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
