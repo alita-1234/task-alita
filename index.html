@@ -8,6 +8,7 @@
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { max-width:100%; overflow-x:hidden; }
   body { background: #F8FAFC; color: #0F172A; font-family: system-ui, -apple-system, sans-serif; font-size: 13px; line-height: 1.5; }
 
   header { background: #ffffff; border-bottom: 1px solid #E2E8F0; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
@@ -72,7 +73,7 @@
 
   .view-pane { display: none; }
   .view-pane.active { display: block; }
-  #pane-calendar.active { display:flex; flex-direction:column; gap:10px; }
+  #pane-calendar.active { display:flex; flex-direction:column; gap:10px; width:100%; min-width:0; overflow-x:auto; }
 
   /* Tasks Component (List View) */
   .list-container { display: flex; flex-direction: column; gap: 12px; }
@@ -120,7 +121,7 @@
   .kb-deadline.overdue { color:#b42318; background:#fef3f2; }
 
   /* Calendar Simulation Grid */
-  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); width:100%; min-width:0; gap: 4px; background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; }
   .calendar-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; background:#fff; border:1px solid #e4e7ec; border-radius:12px; }
   .calendar-nav { display:flex; align-items:center; gap:6px; }
   .calendar-month-title { font-size:16px; font-weight:800; color:#344054; }
@@ -226,7 +227,7 @@
   .google-btn:hover { background:#f9fafb; border-color:#98a2b3; transform:translateY(-1px); }
   .auth-divider { display:flex; align-items:center; gap:10px; margin-bottom:16px; color:#98a2b3; font-size:11px; }
   .auth-divider::before,.auth-divider::after { content:""; height:1px; flex:1; background:#e4e7ec; }
-  .user-menu { display:none; align-items:center; gap:9px; }
+  .user-menu { display:none; align-items:center; gap:9px; min-width:0; }
   .user-menu.show { display:flex; }
   .user-email { max-width:210px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#475467; font-size:12px; }
   .logout-btn { display:inline-flex; align-items:center; gap:6px; padding:7px 9px; color:#475467; background:#fff; border:1px solid #e4e7ec; border-radius:9px; cursor:pointer; }
@@ -245,7 +246,7 @@
   .admin-page-title { display:flex; align-items:center; gap:12px; }
   .admin-page-title h2 { font-size:18px; font-weight:800; }
   .admin-page-title p { margin-top:2px; color:#667085; font-size:11px; }
-  .admin-page-body { max-width:1200px; margin:0 auto; padding:24px; }
+  .admin-page-body { width:100%; min-width:0; max-width:1200px; margin:0 auto; padding:24px; }
   .admin-tabs { display:flex; gap:6px; margin-bottom:18px; padding:5px; overflow-x:auto; background:#eaecf0; border-radius:12px; }
   .admin-tab-btn { flex:1; min-width:170px; display:flex; align-items:center; justify-content:center; gap:7px; padding:10px 14px; border:0; border-radius:9px; color:#667085; background:transparent; cursor:pointer; font-size:12px; font-weight:800; }
   .admin-tab-btn.active { color:#4338ca; background:#fff; box-shadow:0 1px 4px rgba(16,24,40,.09); }
@@ -288,6 +289,13 @@
   @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
   @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row,.template-form,.workflow-template-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
   @media(max-width:640px) {
+    header { flex-wrap:wrap; gap:10px; }
+    header > div { min-width:0; }
+    header > div:last-child { width:100%; flex-wrap:wrap; }
+    .user-menu.show { width:100%; flex-wrap:wrap; }
+    .user-email { flex:1 1 130px; max-width:none; }
+    #dbStatus { flex:none; }
+    .cal-grid { width:630px; min-width:630px; grid-template-columns:repeat(7,90px); }
     .admin-page-header { padding:12px 14px; }
     .admin-page-body { padding:14px; }
     .admin-tab-panel { padding:14px; }
