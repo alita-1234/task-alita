@@ -76,6 +76,13 @@
 
   /* Tasks Component (List View) */
   .list-container { display: flex; flex-direction: column; gap: 12px; }
+  .pagination { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; background:#fff; border:1px solid #e4e7ec; border-radius:12px; }
+  .pagination-summary { color:#667085; font-size:12px; }
+  .pagination-controls { display:flex; align-items:center; gap:5px; }
+  .page-btn { min-width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border:1px solid #d0d5dd; border-radius:8px; color:#475467; background:#fff; cursor:pointer; font-size:12px; font-weight:700; }
+  .page-btn:hover:not(:disabled) { color:#4338ca; border-color:#a5b4fc; background:#eef2ff; }
+  .page-btn.active { color:#fff; border-color:#4f46e5; background:#4f46e5; }
+  .page-btn:disabled { opacity:.4; cursor:not-allowed; }
   .task-card { background: #ffffff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
   .card-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
   
@@ -245,7 +252,7 @@
   .type-list { display:flex; flex-direction:column; gap:7px; }
   .type-row { display:grid; grid-template-columns:1fr 1.6fr 1fr auto auto; gap:8px; align-items:center; padding:9px; border:1px solid #eaecf0; border-radius:9px; }
   @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
+  @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
 </style>
 </head>
 <body>
@@ -497,6 +504,8 @@ let authMode = "login";
 let currentProfile = null;
 let taskTypes = [];
 let adminOwnTasksOnly = false;
+const LIST_PAGE_SIZE = 10;
+let currentListPage = 1;
 
 async function init() {
   setDbStatus("กำลังเชื่อมต่อ...", "loading");
@@ -951,6 +960,7 @@ function getScopeTasks() {
 function toggleAdminTaskScope(ownOnly) {
   if (currentProfile?.role !== "admin") return;
   adminOwnTasksOnly = Boolean(ownOnly);
+  currentListPage = 1;
   document.getElementById("adminScopeLabel").textContent = adminOwnTasksOnly ? "กำลังดูงานของฉัน" : "เฉพาะงานของฉัน";
   render();
 }
@@ -983,7 +993,12 @@ function renderListView() {
     return;
   }
 
-  data.forEach(t => {
+  const totalPages = Math.max(1, Math.ceil(data.length / LIST_PAGE_SIZE));
+  currentListPage = Math.min(Math.max(1, currentListPage), totalPages);
+  const pageStart = (currentListPage - 1) * LIST_PAGE_SIZE;
+  const pageData = data.slice(pageStart, pageStart + LIST_PAGE_SIZE);
+
+  pageData.forEach(t => {
     const typeDefinition = getTaskType(t.type);
     const activeStep = t.subtasks.find(s => !s.checked);
     const isDelay = activeStep && activeStep.daysSpent > 7;
@@ -1028,6 +1043,52 @@ function renderListView() {
     `;
     area.appendChild(card);
   });
+
+  renderListPagination(area, data.length, totalPages, pageStart);
+}
+
+function renderListPagination(area, totalItems, totalPages, pageStart) {
+  const pagination = document.createElement("nav");
+  pagination.className = "pagination";
+  pagination.setAttribute("aria-label", "แบ่งหน้ารายการงาน");
+
+  const summary = document.createElement("span");
+  summary.className = "pagination-summary";
+  const pageEnd = Math.min(pageStart + LIST_PAGE_SIZE, totalItems);
+  summary.textContent = `แสดง ${pageStart + 1}-${pageEnd} จาก ${totalItems} รายการ`;
+
+  const controls = document.createElement("div");
+  controls.className = "pagination-controls";
+  controls.appendChild(createPageButton("‹", currentListPage - 1, currentListPage === 1, false, "หน้าก่อนหน้า"));
+
+  const firstPage = Math.max(1, Math.min(currentListPage - 2, totalPages - 4));
+  const lastPage = Math.min(totalPages, firstPage + 4);
+  for (let page = firstPage; page <= lastPage; page++) {
+    controls.appendChild(createPageButton(String(page), page, false, page === currentListPage, `หน้า ${page}`));
+  }
+
+  controls.appendChild(createPageButton("›", currentListPage + 1, currentListPage === totalPages, false, "หน้าถัดไป"));
+  pagination.append(summary, controls);
+  area.appendChild(pagination);
+}
+
+function createPageButton(label, page, disabled, active, ariaLabel) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = `page-btn${active ? " active" : ""}`;
+  button.textContent = label;
+  button.disabled = disabled;
+  button.setAttribute("aria-label", ariaLabel);
+  if (active) button.setAttribute("aria-current", "page");
+  button.addEventListener("click", () => changeListPage(page));
+  return button;
+}
+
+function changeListPage(page) {
+  currentListPage = page;
+  renderListView();
+  refreshIcons();
+  document.getElementById("pane-list").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 function renderKanbanView() {
@@ -1119,6 +1180,7 @@ function goToToday() {
 
 function setFilter(val) {
   currentFilter = val;
+  currentListPage = 1;
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   document.getElementById(`f-${val}`).classList.add("active");
   render();
@@ -1126,6 +1188,7 @@ function setFilter(val) {
 
 function setStatusFilter(val) {
   currentStatusFilter = val;
+  currentListPage = 1;
   document.querySelectorAll(".status-filter-btn").forEach(button => button.classList.remove("active"));
   document.getElementById(`sf-${val}`).classList.add("active");
   render();
