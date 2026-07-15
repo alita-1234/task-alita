@@ -116,6 +116,8 @@
   .col-title { font-weight: 700; font-size: 12px; color: #475569; border-bottom: 2px solid #CBD5E1; padding-bottom: 4px; margin-bottom: 4px; }
   .kb-card { background: #fff; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
   .kb-card-title { font-weight: 600; font-size: 13px; }
+  .kb-deadline { display:flex; align-items:center; gap:5px; width:max-content; margin-top:2px; padding:4px 7px; color:#475467; background:#f2f4f7; border-radius:7px; font-size:10px; font-weight:700; }
+  .kb-deadline.overdue { color:#b42318; background:#fef3f2; }
 
   /* Calendar Simulation Grid */
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; background: #fff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; }
@@ -1401,10 +1403,12 @@ function renderKanbanView() {
     if (idx === -1) return;
 
     const div = document.createElement("div");
+    const isOverdue = Boolean(t.dueDate && t.dueDate < getLocalDateISO() && getProgressState(t.subtasks) !== "completed");
     div.className = "kb-card";
     div.onclick = () => openModal(t.id);
     div.innerHTML = `
       <div class="kb-card-title">${t.title}</div>
+      ${t.dueDate ? `<div class="kb-deadline${isOverdue ? ' overdue' : ''}">📅 ${isOverdue ? 'เลยกำหนด' : 'กำหนดส่ง'} ${formatDateDisplay(t.dueDate)}</div>` : ''}
       <div style="font-size:11px; color:#94A3B8; display:flex; justify-content:space-between; margin-top:4px;">
          <span>📋 ข้อสำเร็จ: ${t.subtasks.filter(s=>s.checked).length}/${t.subtasks.length}</span>
          <span style="font-weight:bold;">${t.priority}</span>
@@ -1412,6 +1416,11 @@ function renderKanbanView() {
     `;
     document.getElementById(`kb-zone-${idx+1}`).appendChild(div);
   });
+}
+
+function formatDateDisplay(dateValue) {
+  const [year, month, day] = String(dateValue || "").split("-");
+  return year && month && day ? `${day}/${month}/${year}` : dateValue;
 }
 
 function renderCalendarView() {
