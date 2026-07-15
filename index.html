@@ -973,6 +973,7 @@ function renderListView() {
           <span class="tag ${t.priority.toLowerCase()}">${t.priority}</span>
           <span class="tag ${typeDefinition.template_kind}">${typeDefinition.name}</span>
           <span class="tag status">${getProgressLabel(t.subtasks)}</span>
+          ${currentProfile?.role === 'admin' ? `<span class="tag" style="background:#eef2ff; color:#4338ca;">เจ้าของ: ${t.ownerEmail || 'ไม่พบข้อมูล'}</span>` : ''}
           ${t.registeredDate ? `<span class="tag" style="background:#ecfdf3; color:#027a48;">ลงระบบ ${t.registeredDate}</span>` : ''}
           ${t.dueDate ? `<span class="tag" style="background:#F1F5F9; color:#475569;">กำหนดส่ง ${t.dueDate}</span>` : ''}
           ${isDelay ? `<span class="tag warning">⚠️ ค้างขั้นตอนปัจจุบันมาแล้ว ${activeStep.daysSpent} วัน</span>` : ''}

@@ -14,9 +14,11 @@
     return config;
   }
 
-  function mapTask(row) {
+  function mapTask(row, ownerEmail = "") {
     return {
       id: row.id,
+      userId: row.user_id || "",
+      ownerEmail,
       type: row.type,
       title: row.title,
       priority: row.priority,
@@ -51,7 +53,20 @@
       .select("*, subtasks(*)")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data || []).map(mapTask);
+
+    const rows = data || [];
+    const ownerIds = [...new Set(rows.map(row => row.user_id).filter(Boolean))];
+    let ownerById = new Map();
+    if (ownerIds.length) {
+      const { data: profiles, error: profileError } = await client
+        .from("profiles")
+        .select("id, email")
+        .in("id", ownerIds);
+      if (profileError) throw profileError;
+      ownerById = new Map((profiles || []).map(profile => [profile.id, profile.email || ""]));
+    }
+
+    return rows.map(row => mapTask(row, ownerById.get(row.user_id) || ""));
   }
 
   async function createTask(task) {
