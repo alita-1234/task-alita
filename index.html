@@ -271,6 +271,18 @@
   .template-form textarea { width:100%; min-height:76px; resize:vertical; }
   .workflow-template-list { display:flex; flex-direction:column; gap:7px; }
   .workflow-template-row { display:grid; grid-template-columns:minmax(160px,1.4fr) minmax(120px,1fr) auto auto; gap:8px; align-items:center; padding:10px; border:1px solid #eaecf0; border-radius:9px; }
+  .toast-container { position:fixed; top:76px; right:20px; z-index:300; width:min(380px,calc(100vw - 28px)); display:flex; flex-direction:column; gap:9px; pointer-events:none; }
+  .toast { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; color:#344054; background:rgba(255,255,255,.97); border:1px solid #d0d5dd; border-radius:12px; box-shadow:0 14px 35px rgba(16,24,40,.16); animation:toast-in .22s ease-out; pointer-events:auto; }
+  .toast.success { border-color:#a6f4c5; }
+  .toast.error { border-color:#fecdca; }
+  .toast-icon { width:28px; height:28px; display:grid; place-items:center; flex:none; border-radius:999px; color:#067647; background:#ecfdf3; }
+  .toast.error .toast-icon { color:#b42318; background:#fef3f2; }
+  .toast-copy { flex:1; min-width:0; }
+  .toast-title { font-size:12px; font-weight:800; }
+  .toast-message { margin-top:2px; color:#667085; font-size:11px; line-height:1.45; }
+  .toast-close { padding:2px; color:#98a2b3; background:transparent; border:0; cursor:pointer; }
+  .toast.leaving { opacity:0; transform:translateX(18px); transition:.18s ease; }
+  @keyframes toast-in { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
   @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
   @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row,.template-form,.workflow-template-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
   @media(max-width:640px) {
@@ -282,6 +294,8 @@
 </style>
 </head>
 <body>
+
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="false"></div>
 
 <div class="auth-overlay" id="authOverlay">
   <section class="auth-card" aria-labelledby="authTitle">
@@ -828,6 +842,7 @@ async function changeUserApproval(userId, approved, button) {
   try {
     await AlitaDB.setUserApproval(userId, approved);
     renderUserTable(await AlitaDB.listUsers());
+    showToast(approved ? "อนุมัติผู้ใช้งานเรียบร้อยแล้ว" : "ยกเลิกการอนุมัติผู้ใช้งานแล้ว");
   } catch (error) {
     alert(`เปลี่ยนสถานะอนุมัติไม่สำเร็จ: ${error.message}`);
     renderUserTable(await AlitaDB.listUsers());
@@ -839,6 +854,7 @@ async function changeUserRole(userId, role, select) {
   try {
     await AlitaDB.setUserRole(userId, role);
     renderUserTable(await AlitaDB.listUsers());
+    showToast(`เปลี่ยนบทบาทผู้ใช้เป็น ${role === "admin" ? "Admin" : "User"} แล้ว`);
   } catch (error) {
     alert(`เปลี่ยนสิทธิ์ไม่สำเร็จ: ${error.message}`);
     renderUserTable(await AlitaDB.listUsers());
@@ -1012,6 +1028,7 @@ async function submitWorkflowTemplate(event) {
     resetWorkflowTemplateForm();
     await reloadWorkflowTemplates();
     renderWorkflowTemplateManager();
+    showToast("บันทึกเทมเพลตขั้นตอนเรียบร้อยแล้ว");
   } catch (error) {
     alert(`บันทึกเทมเพลตไม่สำเร็จ: ${error.message}\n\nหากยังไม่ได้รัน SQL กรุณารัน supabase-schema.sql เวอร์ชันล่าสุดก่อน`);
   } finally {
@@ -1027,6 +1044,7 @@ async function removeWorkflowTemplate(id) {
     resetWorkflowTemplateForm();
     await reloadWorkflowTemplates();
     renderWorkflowTemplateManager();
+    showToast("ลบเทมเพลตขั้นตอนเรียบร้อยแล้ว");
   } catch (error) {
     alert(`ลบเทมเพลตไม่สำเร็จ: ${error.message}\n\nหากยังไม่ได้รัน SQL กรุณารัน supabase-schema.sql เวอร์ชันล่าสุดก่อน`);
   }
@@ -1085,6 +1103,7 @@ async function submitTaskType(event) {
     await reloadTaskTypes();
     renderTaskTypeManager();
     render();
+    showToast("บันทึกประเภทระบบงานเรียบร้อยแล้ว");
   } catch (error) {
     alert(`บันทึกประเภทงานไม่สำเร็จ: ${error.message}`);
   } finally {
@@ -1101,6 +1120,7 @@ async function removeTaskType(code) {
     await reloadTaskTypes();
     renderTaskTypeManager();
     render();
+    showToast("ลบประเภทระบบงานเรียบร้อยแล้ว");
   } catch (error) {
     alert(`ลบประเภทงานไม่สำเร็จ: ${error.message}`);
   }
@@ -1123,6 +1143,44 @@ function setDbStatus(text, state) {
 function showAppError(error) {
   const message = error?.message || "เกิดข้อผิดพลาดในการเชื่อมต่อฐานข้อมูล";
   document.getElementById("alertBanner").textContent = `ฐานข้อมูล: ${message}`;
+}
+
+function showToast(message, options = {}) {
+  const { type = "success", title = type === "success" ? "ดำเนินการสำเร็จ" : "เกิดข้อผิดพลาด", duration = 3200 } = options;
+  const container = document.getElementById("toastContainer");
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`;
+  toast.setAttribute("role", type === "error" ? "alert" : "status");
+
+  const icon = document.createElement("span");
+  icon.className = "toast-icon";
+  icon.innerHTML = `<i data-lucide="${type === "error" ? "circle-alert" : "circle-check"}"></i>`;
+  const copy = document.createElement("div");
+  copy.className = "toast-copy";
+  const heading = document.createElement("div");
+  heading.className = "toast-title";
+  heading.textContent = title;
+  const detail = document.createElement("div");
+  detail.className = "toast-message";
+  detail.textContent = message;
+  copy.append(heading, detail);
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "toast-close";
+  close.setAttribute("aria-label", "ปิดการแจ้งเตือน");
+  close.innerHTML = '<i data-lucide="x"></i>';
+
+  let timer;
+  const dismiss = () => {
+    clearTimeout(timer);
+    toast.classList.add("leaving");
+    setTimeout(() => toast.remove(), 180);
+  };
+  close.addEventListener("click", dismiss);
+  toast.append(icon, copy, close);
+  container.appendChild(toast);
+  refreshIcons();
+  timer = setTimeout(dismiss, duration);
 }
 
 function getLocalDateISO() {
@@ -1475,6 +1533,7 @@ async function createNewTask() {
     document.getElementById("addDueDate").value = "";
     document.getElementById("addRegisteredDate").value = getLocalDateISO();
     await reloadTasks();
+    showToast("สร้างรายการงานใหม่เรียบร้อยแล้ว");
   } catch (error) {
     console.error(error);
     showAppError(error);
@@ -1603,6 +1662,7 @@ async function saveModal() {
       await AlitaDB.updateTask(t);
       closeModal();
       await reloadTasks();
+      showToast("บันทึกรายละเอียดและขั้นตอนเรียบร้อยแล้ว");
     } catch (error) {
       console.error(error);
       showAppError(error);
@@ -1625,6 +1685,7 @@ async function deleteTask(id) {
     try {
       await AlitaDB.deleteTask(id);
       await reloadTasks();
+      showToast("ลบรายการงานเรียบร้อยแล้ว");
     } catch (error) {
       console.error(error);
       showAppError(error);
