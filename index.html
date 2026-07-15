@@ -138,6 +138,8 @@
   .modal { background: #fff; border-radius: 8px; padding: 20px; width: 620px; max-width: 100%; max-height: 85vh; display: flex; flex-direction: column; gap: 16px; }
   .modal-scroll { overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
   .modal-step-row { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; }
+  .modal-task-fields { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; padding:12px; background:#f8fafc; border:1px solid #e4e7ec; border-radius:12px; }
+  .modal-task-fields .title-field { grid-column:1 / -1; }
   .modal-step-top { display: flex; align-items: center; gap: 8px; }
   .modal-step-top input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
   .step-number { min-width:28px; color:#4338ca; font-size:12px; font-weight:800; text-align:center; }
@@ -296,6 +298,8 @@
     .user-email { flex:1 1 130px; max-width:none; }
     #dbStatus { flex:none; }
     .cal-grid { width:630px; min-width:630px; grid-template-columns:repeat(7,90px); }
+    .modal-task-fields { grid-template-columns:1fr; }
+    .modal-task-fields .title-field { grid-column:auto; }
     .admin-page-header { padding:12px 14px; }
     .admin-page-body { padding:14px; }
     .admin-tab-panel { padding:14px; }
@@ -482,6 +486,14 @@
         </select>
       </div>
     </div>
+
+    <div class="modal-task-fields">
+      <div class="form-group title-field"><label for="m-task-title">ชื่องาน / ชื่อโครงการ</label><input type="text" id="m-task-title" maxlength="500" required></div>
+      <div class="form-group"><label for="m-task-type">ประเภทระบบงาน</label><select id="m-task-type"></select></div>
+      <div class="form-group"><label for="m-task-priority">ระดับความสำคัญ</label><select id="m-task-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
+      <div class="form-group"><label for="m-task-registered">วันที่ลงระบบ</label><input type="date" id="m-task-registered"></div>
+      <div class="form-group"><label for="m-task-due">วันที่ครบกำหนด</label><input type="date" id="m-task-due"></div>
+    </div>
     
     <div>
       <h4 style="font-size:13px;font-weight:800;color:#344054;">ขั้นตอนการดำเนินงาน</h4>
@@ -497,7 +509,7 @@
     <div class="modal-scroll" id="m-steps-area"></div>
     <div style="border-top:1px solid #E2E8F0; padding-top:10px; display:flex; justify-content:flex-end; gap:6px;">
       <button class="danger-btn" onclick="closeModal()" style="border:1px solid #CBD5E1; color:#475569;">ยกเลิก</button>
-      <button class="action-btn" onclick="saveModal()"><i data-lucide="save"></i>บันทึกข้อมูลขั้นตอน</button>
+      <button class="action-btn" onclick="saveModal()"><i data-lucide="save"></i>บันทึกการแก้ไข</button>
     </div>
   </div>
 </div>
@@ -1566,6 +1578,19 @@ function openModal(id) {
   activeEditID = id;
   document.getElementById("m-title").textContent = t.title;
   document.getElementById("m-status").value = t.status;
+  document.getElementById("m-task-title").value = t.title;
+  const typeSelect = document.getElementById("m-task-type");
+  typeSelect.textContent = "";
+  taskTypes.filter(type => type.is_active || type.code === t.type).forEach(type => {
+    const option = document.createElement("option");
+    option.value = type.code;
+    option.textContent = type.name;
+    typeSelect.appendChild(option);
+  });
+  typeSelect.value = t.type;
+  document.getElementById("m-task-priority").value = t.priority;
+  document.getElementById("m-task-registered").value = t.registeredDate || "";
+  document.getElementById("m-task-due").value = t.dueDate || "";
   editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks)).map(step => ({
     ...step,
     name: stripStepNumber(step.name)
@@ -1667,16 +1692,35 @@ function numberStepTitles(steps) {
 async function saveModal() {
   const t = tasks.find(x => x.id === activeEditID);
   if (t) {
+    const title = document.getElementById("m-task-title").value.trim();
+    const type = document.getElementById("m-task-type").value;
+    if (!title) {
+      alert("กรุณากรอกชื่องานก่อนบันทึก");
+      document.getElementById("m-task-title").focus();
+      return;
+    }
+    if (!type) {
+      alert("กรุณาเลือกประเภทระบบงานก่อนบันทึก");
+      return;
+    }
     const emptyStepIndex = editSubtasksClone.findIndex(step => !stripStepNumber(step.name));
     if (emptyStepIndex !== -1) {
       alert(`กรุณากรอกชื่อหัวข้อที่ ${emptyStepIndex + 1} ก่อนบันทึก`);
       document.querySelectorAll("#m-steps-area .step-title-input")[emptyStepIndex]?.focus();
       return;
     }
-    t.status = getProgressStatus(editSubtasksClone);
-    t.subtasks = numberStepTitles(editSubtasksClone);
+    const updatedTask = {
+      ...t,
+      title,
+      type,
+      priority: document.getElementById("m-task-priority").value,
+      registeredDate: document.getElementById("m-task-registered").value || getLocalDateISO(),
+      dueDate: document.getElementById("m-task-due").value || "",
+      status: getProgressStatus(editSubtasksClone),
+      subtasks: numberStepTitles(editSubtasksClone)
+    };
     try {
-      await AlitaDB.updateTask(t);
+      await AlitaDB.updateTask(updatedTask);
       closeModal();
       await reloadTasks();
       showToast("บันทึกรายละเอียดและขั้นตอนเรียบร้อยแล้ว");

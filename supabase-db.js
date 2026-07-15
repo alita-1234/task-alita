@@ -104,7 +104,15 @@
   async function updateTask(task) {
     const { error } = await client
       .from(window.ALITA_CONFIG.TABLES.TASKS)
-      .update({ status: task.status, updated_at: new Date().toISOString() })
+      .update({
+        title: task.title,
+        type: task.type,
+        priority: task.priority,
+        registered_date: task.registeredDate || new Date().toISOString().slice(0, 10),
+        due_date: task.dueDate || null,
+        status: task.status,
+        updated_at: new Date().toISOString()
+      })
       .eq("id", task.id);
     if (error) throw error;
 
