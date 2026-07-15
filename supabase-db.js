@@ -225,10 +225,48 @@
     if (error) throw error;
   }
 
+  async function listWorkflowTemplates() {
+    const { data, error } = await client.from("workflow_templates")
+      .select("id, name, description, recommended_kind, steps, is_active, sort_order")
+      .order("sort_order", { ascending: true });
+    if (error) {
+      if (["42P01", "PGRST205"].includes(error.code)) return [];
+      throw error;
+    }
+    return (data || []).map(template => ({
+      id: template.id,
+      name: template.name,
+      description: template.description || "",
+      recommendedKind: template.recommended_kind,
+      steps: Array.isArray(template.steps) ? template.steps : [],
+      isActive: template.is_active,
+      sortOrder: template.sort_order
+    }));
+  }
+
+  async function saveWorkflowTemplate(template) {
+    const { data, error } = await client.rpc("admin_save_workflow_template", {
+      template_id: template.id || null,
+      template_name: template.name,
+      template_description: template.description || "",
+      template_recommended_kind: template.recommendedKind,
+      template_steps: template.steps,
+      template_is_active: template.isActive
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async function deleteWorkflowTemplate(id) {
+    const { error } = await client.rpc("admin_delete_workflow_template", { template_id: id });
+    if (error) throw error;
+  }
+
   window.AlitaDB = Object.freeze({
     connect, loadTasks, createTask, updateTask, deleteTask,
     getSession, signIn, signUp, signInWithGoogle, signOut,
     getMyProfile, listUsers, setUserRole, setUserApproval,
-    listTaskTypes, saveTaskType, deleteTaskType
+    listTaskTypes, saveTaskType, deleteTaskType,
+    listWorkflowTemplates, saveWorkflowTemplate, deleteWorkflowTemplate
   });
 })();

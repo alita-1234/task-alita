@@ -290,3 +290,106 @@ drop policy if exists "users manage subtasks of own tasks" on public.subtasks;
 create policy "users manage subtasks of own tasks" on public.subtasks for all to authenticated
   using (exists (select 1 from public.tasks where tasks.id = subtasks.task_id and ((tasks.user_id = auth.uid() and public.is_approved()) or public.is_admin())))
   with check (exists (select 1 from public.tasks where tasks.id = subtasks.task_id and ((tasks.user_id = auth.uid() and public.is_approved()) or public.is_admin())));
+
+-- คลังเทมเพลตขั้นตอนการดำเนินงานที่ Admin จัดการได้
+create table if not exists public.workflow_templates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 1 and 120),
+  description text not null default '' check (char_length(description) <= 500),
+  recommended_kind text not null default 'general' check (recommended_kind in ('project', 'general')),
+  steps jsonb not null default '[]'::jsonb check (jsonb_typeof(steps) = 'array'),
+  is_active boolean not null default true,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+alter table public.workflow_templates enable row level security;
+revoke all on public.workflow_templates from anon;
+grant select on public.workflow_templates to authenticated;
+
+drop policy if exists "users read active workflow templates admins read all" on public.workflow_templates;
+create policy "users read active workflow templates admins read all" on public.workflow_templates
+  for select to authenticated using (is_active or public.is_admin());
+
+insert into public.workflow_templates (id, name, description, recommended_kind, steps, is_active, sort_order) values
+  (
+    '00000000-0000-4000-8000-000000000001',
+    'จัดซื้อจัดจ้าง 17 ขั้นตอน',
+    'ลำดับงานโครงการจัดซื้อจัดจ้าง ตั้งแต่บันทึกโครงการจนถึงอนุมัติเบิกจ่าย',
+    'project',
+    '["โครงการ + บันทึกปะหน้า","แต่งตั้งกรรมการ TOR","จัดทำร่าง TOR","ประชุมร่าง TOR","เห็นชอบร่าง TOR","ขออนุมัติค่าเบิก","หนังสือส่งสืบราคา","ตารางใบสืบราคา","ประชุมกำหนดราคากลาง","ตารางราคากลาง","บันทึกเชิญยื่นซอง","อนุมัติเบิกครุภัณฑ์","คณะกรรมการเปิดซอง","อนุมัติเบิกค่าเปิดซอง","ตรวจรับพัสดุงาน","บันทึกผลตรวจรับ","ขออนุมัติเบิกจ่าย"]'::jsonb,
+    true, 10
+  ),
+  (
+    '00000000-0000-4000-8000-000000000002',
+    'งานทั่วไป 2 ขั้นตอน',
+    'เตรียมเอกสารและตรวจสอบความถูกต้องก่อนส่งฝ่ายบริหาร',
+    'general',
+    '["ขั้นเตรียมเอกสารนโยบายตั้งต้น","ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร"]'::jsonb,
+    true, 20
+  ),
+  (
+    '00000000-0000-4000-8000-000000000003',
+    'เริ่มงานเปล่า',
+    'ไม่สร้างขั้นตอนเริ่มต้น สามารถเพิ่มขั้นตอนเองภายหลังใน Modal',
+    'general',
+    '[]'::jsonb,
+    true, 30
+  )
+on conflict (id) do nothing;
+
+create or replace function public.admin_save_workflow_template(
+  template_id uuid,
+  template_name text,
+  template_description text,
+  template_recommended_kind text,
+  template_steps jsonb,
+  template_is_active boolean
+)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare saved_id uuid;
+begin
+  if not public.is_admin() then raise exception 'Admin permission required'; end if;
+  template_name := trim(template_name);
+  template_description := trim(coalesce(template_description, ''));
+  if char_length(template_name) < 1 or char_length(template_name) > 120 then raise exception 'Invalid template name'; end if;
+  if char_length(template_description) > 500 then raise exception 'Description is too long'; end if;
+  if template_recommended_kind not in ('project', 'general') then raise exception 'Invalid recommended kind'; end if;
+  if jsonb_typeof(template_steps) <> 'array' then raise exception 'Steps must be an array'; end if;
+  if exists (select 1 from jsonb_array_elements(template_steps) item where jsonb_typeof(item) <> 'string' or length(trim(item #>> '{}')) < 1) then
+    raise exception 'Every step must contain a title';
+  end if;
+
+  if template_id is null then
+    insert into public.workflow_templates (name, description, recommended_kind, steps, is_active, sort_order)
+    values (template_name, template_description, template_recommended_kind, template_steps, template_is_active,
+      coalesce((select max(sort_order) + 10 from public.workflow_templates), 10))
+    returning id into saved_id;
+  else
+    update public.workflow_templates set
+      name = template_name,
+      description = template_description,
+      recommended_kind = template_recommended_kind,
+      steps = template_steps,
+      is_active = template_is_active,
+      updated_at = now()
+    where id = template_id
+    returning id into saved_id;
+    if saved_id is null then raise exception 'Workflow template not found'; end if;
+  end if;
+  return saved_id;
+end;
+$$;
+revoke all on function public.admin_save_workflow_template(uuid, text, text, text, jsonb, boolean) from public;
+grant execute on function public.admin_save_workflow_template(uuid, text, text, text, jsonb, boolean) to authenticated;
+
+create or replace function public.admin_delete_workflow_template(template_id uuid)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.is_admin() then raise exception 'Admin permission required'; end if;
+  delete from public.workflow_templates where id = template_id;
+  if not found then raise exception 'Workflow template not found'; end if;
+end;
+$$;
+revoke all on function public.admin_delete_workflow_template(uuid) from public;
+grant execute on function public.admin_delete_workflow_template(uuid) to authenticated;

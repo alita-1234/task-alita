@@ -37,10 +37,13 @@
 - Admin allowlist ฝั่งฐานข้อมูลคืน/คงสิทธิ์ `aalita1234@gmail.com` เป็น Admin และอนุมัติอัตโนมัติ
 - การอ่านโปรไฟล์กรองด้วย Auth user ID ป้องกัน Admin หยิบ profile ของ User คนอื่นมาแสดง
 - Calendar เป็นปฏิทินรายเดือนจริง 6 สัปดาห์ มีนำทางเดือน/วันนี้ และจับคู่งานด้วย due_date เต็ม
+- Admin จัดการคลังเทมเพลตขั้นตอนการดำเนินงานได้: สร้าง แก้ไข เปิด/ปิด และลบ โดยงานเดิมไม่เปลี่ยนตามเทมเพลต
+- ผู้ใช้เลือกเทมเพลตตอนสร้างงาน และระบบคัดลอกพร้อมรันเลขขั้นตอนให้อัตโนมัติ
 
 ## สิ่งที่ต้องตั้งค่าหรือทำต่อ
 
 1. รัน `supabase-schema.sql` เวอร์ชันล่าสุดทั้งหมดใน Supabase SQL Editor
+   - เวอร์ชันล่าสุดเพิ่มตาราง `workflow_templates` และ RPC สำหรับ Admin; ต้องรันก่อนบันทึกเทมเพลตจากหน้าเว็บ
 2. เปิด Email provider ใน Supabase Authentication
 3. เปิด Google provider และกรอก Google Client ID / Client Secret
 4. เพิ่ม Supabase Callback URL ใน Google Cloud Authorized redirect URIs

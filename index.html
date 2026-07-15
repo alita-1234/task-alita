@@ -237,7 +237,7 @@
   .user-table th,.user-table td { padding:11px 8px; border-bottom:1px solid #eaecf0; text-align:left; }
   .user-table th { color:#667085; font-size:11px; }
   .user-table td { color:#344054; font-size:12px; }
-  #userModal .modal { width:820px; }
+  #userModal .modal { width:820px; overflow-y:auto; }
   #userListArea { overflow-x:auto; }
   .user-table { min-width:680px; }
   .approval-btn { min-width:92px; border:0; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:12px; font-weight:800; }
@@ -252,8 +252,13 @@
   .type-form .form-group { gap:4px; }
   .type-list { display:flex; flex-direction:column; gap:7px; }
   .type-row { display:grid; grid-template-columns:1fr 1.6fr 1fr auto auto; gap:8px; align-items:center; padding:9px; border:1px solid #eaecf0; border-radius:9px; }
+  .template-form { display:grid; grid-template-columns:1.4fr 1fr auto; gap:8px; margin:12px 0; align-items:end; }
+  .template-form .template-description,.template-form .template-steps { grid-column:1 / -1; }
+  .template-form textarea { width:100%; min-height:76px; resize:vertical; }
+  .workflow-template-list { display:flex; flex-direction:column; gap:7px; }
+  .workflow-template-row { display:grid; grid-template-columns:minmax(160px,1.4fr) minmax(120px,1fr) auto auto; gap:8px; align-items:center; padding:10px; border:1px solid #eaecf0; border-radius:9px; }
   @media(max-width:1024px){ .layout{grid-template-columns:1fr}.dashboard-grid{grid-template-columns:repeat(2,1fr)} }
-  @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
+  @media(max-width:640px){ header{padding:12px 16px}.tag-eyebrow,.brand-copy small{display:none}.layout{margin:16px auto;padding:0 12px 28px}.dashboard-grid{grid-template-columns:repeat(2,1fr)}.metric-card{min-height:94px}.workspace-header{align-items:flex-start;gap:10px;flex-direction:column}.view-switcher{width:100%}.view-btn{flex:1;justify-content:center;font-size:0}.view-btn .lucide{width:18px;height:18px}.status-filter-bar{grid-template-columns:repeat(2,1fr)}.card-actions{justify-content:stretch}.card-actions button{flex:1}.pagination{align-items:flex-start;flex-direction:column}.pagination-controls{width:100%;justify-content:center}.modal{padding:16px}.modal-step-top{align-items:flex-start}.modal-step-note{margin-left:0}.type-form,.type-row,.template-form,.workflow-template-row{grid-template-columns:1fr}.cal-grid{overflow-x:auto;grid-template-columns:repeat(7,minmax(90px,1fr))} }
 </style>
 </head>
 <body>
@@ -472,6 +477,20 @@
       </form>
       <div class="type-list" id="taskTypeList"></div>
     </section>
+    <section class="admin-section">
+      <h3 style="font-size:15px;font-weight:800;">จัดการเทมเพลตขั้นตอน</h3>
+      <p style="font-size:11px;color:#667085;">หนึ่งบรรทัดต่อหนึ่งขั้นตอน ระบบจะรันเลขให้อัตโนมัติเมื่อสร้างงาน</p>
+      <form class="template-form" id="workflowTemplateForm" onsubmit="submitWorkflowTemplate(event)">
+        <input type="hidden" id="workflowTemplateId">
+        <div class="form-group"><label for="workflowTemplateName">ชื่อเทมเพลต</label><input id="workflowTemplateName" maxlength="120" placeholder="เช่น ขั้นตอนงานการเงิน" required></div>
+        <div class="form-group"><label for="workflowTemplateKind">แนะนำสำหรับ</label><select id="workflowTemplateKind"><option value="general">งานทั่วไป</option><option value="project">โครงการ</option></select></div>
+        <label style="display:flex;align-items:center;gap:5px;padding-bottom:10px;"><input id="workflowTemplateActive" type="checkbox" checked> เปิดใช้</label>
+        <div class="form-group template-description"><label for="workflowTemplateDescription">คำอธิบาย</label><input id="workflowTemplateDescription" maxlength="500" placeholder="อธิบายว่าเทมเพลตนี้เหมาะกับงานแบบใด"></div>
+        <div class="form-group template-steps"><label for="workflowTemplateSteps">รายการขั้นตอน</label><textarea id="workflowTemplateSteps" placeholder="เตรียมเอกสาร&#10;ตรวจสอบข้อมูล&#10;เสนออนุมัติ"></textarea></div>
+        <div style="display:flex;gap:7px;grid-column:1/-1;justify-content:flex-end;"><button class="logout-btn" type="button" onclick="resetWorkflowTemplateForm()">ล้างฟอร์ม</button><button class="action-btn" type="submit"><i data-lucide="save"></i>บันทึกเทมเพลต</button></div>
+      </form>
+      <div class="workflow-template-list" id="workflowTemplateList"></div>
+    </section>
   </div>
 </div>
 
@@ -487,27 +506,30 @@ const STEPS_TEMPLATE = [
   "11. คณะกรรมการเปิดซอง", "11.1 อนุมัติเบิกค่าเปิดซอง", "12. ตรวจรับพัสดุงาน", "13. บันทึกผลตรวจรับ", "14. ขออนุมัติเบิกจ่าย"
 ];
 
-const WORKFLOW_TEMPLATES = Object.freeze([
+const BUILTIN_WORKFLOW_TEMPLATES = Object.freeze([
   {
     id: "procurement",
     name: "จัดซื้อจัดจ้าง 17 ขั้นตอน",
     description: "ลำดับงานโครงการจัดซื้อจัดจ้าง ตั้งแต่บันทึกโครงการจนถึงอนุมัติเบิกจ่าย",
     recommendedKind: "project",
-    steps: STEPS_TEMPLATE
+    steps: STEPS_TEMPLATE,
+    isActive: true
   },
   {
     id: "general",
     name: "งานทั่วไป 2 ขั้นตอน",
     description: "เตรียมเอกสารและตรวจสอบความถูกต้องก่อนส่งฝ่ายบริหาร",
     recommendedKind: "general",
-    steps: ["ขั้นเตรียมเอกสารนโยบายตั้งต้น", "ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร"]
+    steps: ["ขั้นเตรียมเอกสารนโยบายตั้งต้น", "ตรวจสอบส่งความถูกต้องให้ฝ่ายบริหาร"],
+    isActive: true
   },
   {
     id: "blank",
     name: "เริ่มงานเปล่า",
     description: "ไม่สร้างขั้นตอนเริ่มต้น สามารถเพิ่มขั้นตอนเองภายหลังใน Modal",
     recommendedKind: "general",
-    steps: []
+    steps: [],
+    isActive: true
   }
 ]);
 
@@ -538,6 +560,7 @@ let editSubtasksClone = [];
 let authMode = "login";
 let currentProfile = null;
 let taskTypes = [];
+let workflowTemplates = [];
 let adminOwnTasksOnly = false;
 const LIST_PAGE_SIZE = 10;
 let currentListPage = 1;
@@ -596,6 +619,7 @@ async function enterWorkspace(session) {
   document.getElementById("adminOwnTasksOnly").checked = adminOwnTasksOnly;
   document.getElementById("alertBanner").textContent = "";
   await reloadTaskTypes();
+  await reloadWorkflowTemplates();
   await reloadTasks();
   setDbStatus("เชื่อมต่อแล้ว", "online");
   refreshIcons();
@@ -693,6 +717,8 @@ async function openUserManager() {
     renderUserTable(await AlitaDB.listUsers());
     await reloadTaskTypes();
     renderTaskTypeManager();
+    await reloadWorkflowTemplates();
+    renderWorkflowTemplateManager();
   } catch (error) {
     area.textContent = `โหลดรายชื่อไม่สำเร็จ: ${error.message}`;
   }
@@ -829,14 +855,15 @@ function renderWorkflowTemplateOptions() {
   const select = document.getElementById("addWorkflowTemplate");
   const previousValue = select.value;
   select.textContent = "";
-  WORKFLOW_TEMPLATES.forEach(template => {
+  const availableTemplates = getWorkflowTemplates().filter(template => template.isActive !== false);
+  availableTemplates.forEach(template => {
     const option = document.createElement("option");
     option.value = template.id;
     option.textContent = template.name;
     select.appendChild(option);
   });
   select.onchange = updateWorkflowTemplateHint;
-  if (WORKFLOW_TEMPLATES.some(template => template.id === previousValue)) {
+  if (availableTemplates.some(template => template.id === previousValue)) {
     select.value = previousValue;
   } else {
     syncWorkflowTemplateToTaskType();
@@ -848,16 +875,114 @@ function syncWorkflowTemplateToTaskType() {
   const templateSelect = document.getElementById("addWorkflowTemplate");
   if (!templateSelect) return;
   const type = getTaskType(document.getElementById("addType").value);
-  const recommended = WORKFLOW_TEMPLATES.find(template => template.recommendedKind === type.template_kind);
+  const recommended = getWorkflowTemplates().find(template => template.isActive !== false && template.recommendedKind === type.template_kind);
   if (recommended) templateSelect.value = recommended.id;
   updateWorkflowTemplateHint();
 }
 
 function updateWorkflowTemplateHint() {
   const selectedId = document.getElementById("addWorkflowTemplate")?.value;
-  const template = WORKFLOW_TEMPLATES.find(item => item.id === selectedId);
+  const template = getWorkflowTemplates().find(item => item.id === selectedId);
   const hint = document.getElementById("workflowTemplateHint");
   if (hint) hint.textContent = template ? `${template.description} · ${template.steps.length} ขั้นตอน` : "";
+}
+
+function getWorkflowTemplates() {
+  return workflowTemplates.length ? workflowTemplates : BUILTIN_WORKFLOW_TEMPLATES;
+}
+
+async function reloadWorkflowTemplates() {
+  workflowTemplates = await AlitaDB.listWorkflowTemplates();
+  renderWorkflowTemplateOptions();
+}
+
+function renderWorkflowTemplateManager() {
+  const area = document.getElementById("workflowTemplateList");
+  area.textContent = "";
+  getWorkflowTemplates().forEach(template => {
+    const row = document.createElement("div");
+    row.className = "workflow-template-row";
+    const title = document.createElement("div");
+    const name = document.createElement("strong");
+    name.textContent = template.name;
+    const detail = document.createElement("small");
+    detail.style.display = "block";
+    detail.style.color = "#667085";
+    detail.textContent = `${template.steps.length} ขั้นตอน · ${template.isActive === false ? "ปิดใช้งาน" : "เปิดใช้งาน"}`;
+    title.append(name, detail);
+    const kind = document.createElement("span");
+    kind.textContent = template.recommendedKind === "project" ? "แนะนำสำหรับโครงการ" : "แนะนำสำหรับงานทั่วไป";
+    const edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "logout-btn";
+    edit.textContent = "แก้ไข";
+    edit.addEventListener("click", () => editWorkflowTemplate(template.id));
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "danger-btn";
+    remove.textContent = "ลบ";
+    remove.addEventListener("click", () => removeWorkflowTemplate(template.id));
+    row.append(title, kind, edit, remove);
+    area.appendChild(row);
+  });
+}
+
+function editWorkflowTemplate(id) {
+  const template = getWorkflowTemplates().find(item => item.id === id);
+  if (!template) return;
+  document.getElementById("workflowTemplateId").value = template.id;
+  document.getElementById("workflowTemplateName").value = template.name;
+  document.getElementById("workflowTemplateDescription").value = template.description || "";
+  document.getElementById("workflowTemplateKind").value = template.recommendedKind;
+  document.getElementById("workflowTemplateSteps").value = template.steps.map(stripStepNumber).join("\n");
+  document.getElementById("workflowTemplateActive").checked = template.isActive !== false;
+  document.getElementById("workflowTemplateName").focus();
+}
+
+function resetWorkflowTemplateForm() {
+  document.getElementById("workflowTemplateForm").reset();
+  document.getElementById("workflowTemplateId").value = "";
+  document.getElementById("workflowTemplateActive").checked = true;
+}
+
+async function submitWorkflowTemplate(event) {
+  event.preventDefault();
+  const steps = document.getElementById("workflowTemplateSteps").value
+    .split(/\r?\n/)
+    .map(stripStepNumber)
+    .filter(Boolean);
+  const submit = event.submitter;
+  submit.disabled = true;
+  try {
+    await AlitaDB.saveWorkflowTemplate({
+      id: document.getElementById("workflowTemplateId").value || null,
+      name: document.getElementById("workflowTemplateName").value.trim(),
+      description: document.getElementById("workflowTemplateDescription").value.trim(),
+      recommendedKind: document.getElementById("workflowTemplateKind").value,
+      steps,
+      isActive: document.getElementById("workflowTemplateActive").checked
+    });
+    resetWorkflowTemplateForm();
+    await reloadWorkflowTemplates();
+    renderWorkflowTemplateManager();
+  } catch (error) {
+    alert(`บันทึกเทมเพลตไม่สำเร็จ: ${error.message}\n\nหากยังไม่ได้รัน SQL กรุณารัน supabase-schema.sql เวอร์ชันล่าสุดก่อน`);
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function removeWorkflowTemplate(id) {
+  const template = getWorkflowTemplates().find(item => item.id === id);
+  if (!template || !confirm(`ยืนยันการลบเทมเพลต\n\n“${template.name}”\n\nงานที่สร้างไปแล้วจะไม่ถูกลบหรือเปลี่ยนแปลง`)) return;
+  try {
+    await AlitaDB.deleteWorkflowTemplate(id);
+    resetWorkflowTemplateForm();
+    await reloadWorkflowTemplates();
+    renderWorkflowTemplateManager();
+  } catch (error) {
+    alert(`ลบเทมเพลตไม่สำเร็จ: ${error.message}\n\nหากยังไม่ได้รัน SQL กรุณารัน supabase-schema.sql เวอร์ชันล่าสุดก่อน`);
+  }
 }
 
 function renderTaskTypeManager() {
@@ -1285,7 +1410,7 @@ async function createNewTask() {
 
   if (!title) { alert("กรุณาใส่ชื่องานก่อนบันทึกครับ"); return; }
   if (!type) { alert("ยังไม่มีประเภทงานที่เปิดใช้งาน กรุณาติดต่อ Admin"); return; }
-  const workflowTemplate = WORKFLOW_TEMPLATES.find(template => template.id === workflowTemplateId);
+  const workflowTemplate = getWorkflowTemplates().find(template => template.isActive !== false && template.id === workflowTemplateId);
   if (!workflowTemplate) { alert("กรุณาเลือกเทมเพลตขั้นตอนการดำเนินงาน"); return; }
 
   const steps = workflowTemplate.steps.map((name, idx) => ({
