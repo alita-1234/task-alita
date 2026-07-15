@@ -137,7 +137,8 @@
   .modal-step-row { background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 12px; }
   .modal-step-top { display: flex; align-items: center; gap: 8px; }
   .modal-step-top input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
-  .modal-step-top label { font-weight: 600; cursor: pointer; flex: 1; }
+  .step-number { min-width:28px; color:#4338ca; font-size:12px; font-weight:800; text-align:center; }
+  .step-title-input { flex:1; min-width:140px; min-height:36px; padding:7px 9px; font-size:12px; font-weight:600; }
   .modal-step-note { display: flex; gap: 6px; align-items: center; margin-left: 24px; margin-top: 4px; }
   .modal-step-note input { padding: 4px 8px; font-size: 11px; }
   .step-order-controls { display:inline-flex; gap:4px; margin-left:auto; }
@@ -428,6 +429,11 @@
       </div>
     </div>
     
+    <div>
+      <h4 style="font-size:13px;font-weight:800;color:#344054;">ขั้นตอนการดำเนินงาน</h4>
+      <p style="margin-top:2px;color:#667085;font-size:11px;">แก้ไขชื่อหรือจัดลำดับหัวข้อได้ ระบบจะรันเลขหัวข้อใหม่ให้อัตโนมัติ</p>
+    </div>
+
     <!-- ฟอร์มเพิ่มขั้นตอนพิเศษ (เปิดใช้งานอิสระทั้งโครงการและงานทั่วไป) -->
     <div id="m-add-section" style="display:flex; background:#F1F5F9; padding:8px; border-radius:6px; gap:6px; align-items:center;">
       <input type="text" id="m-new-step-title" placeholder="เพิ่มรายละเอียดขั้นตอนย่อยใหม่เข้าสู่ลิสต์งานนี้..." style="flex:1; padding:6px 10px;">
@@ -1247,7 +1253,10 @@ function openModal(id) {
   activeEditID = id;
   document.getElementById("m-title").textContent = t.title;
   document.getElementById("m-status").value = t.status;
-  editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks));
+  editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks)).map(step => ({
+    ...step,
+    name: stripStepNumber(step.name)
+  }));
   
   renderModalSteps();
   document.getElementById("taskModal").classList.add("open");
@@ -1264,8 +1273,9 @@ function renderModalSteps() {
     row.className = "modal-step-row";
     row.innerHTML = `
       <div class="modal-step-top">
-        <input type="checkbox" id="m-chk-${idx}" ${st.checked ? 'checked' : ''} onchange="toggleStepCheck(${idx})">
-        <label for="m-chk-${idx}">${st.name}</label>
+        <input type="checkbox" id="m-chk-${idx}" aria-label="ทำเครื่องหมายหัวข้อ ${idx + 1} ว่าเสร็จแล้ว" ${st.checked ? 'checked' : ''} onchange="toggleStepCheck(${idx})">
+        <span class="step-number">${idx + 1}.</span>
+        <input type="text" class="step-title-input" aria-label="ชื่อหัวข้อ ${idx + 1}" maxlength="490" placeholder="ชื่อขั้นตอนการดำเนินงาน" oninput="updateStepTitle(${idx}, this.value)">
         ${!st.checked && st.daysSpent > 0 ? `<span style="font-size:11px; font-weight:bold; color:${st.daysSpent > 7 ? '#EF4444' : '#475569'}">ค้างมาแล้ว ${st.daysSpent} วัน</span>` : ''}
         
         <div class="step-order-controls" aria-label="จัดลำดับหัวข้อ">
@@ -1279,6 +1289,7 @@ function renderModalSteps() {
         <input type="text" value="${st.note || ''}" placeholder="พิมพ์หมายเหตุในสเต็ปนี้..." onchange="updateStepNote(${idx}, this.value)">
       </div>
     `;
+    row.querySelector(".step-title-input").value = st.name || "";
     area.appendChild(row);
   });
   refreshIcons();
@@ -1290,7 +1301,7 @@ function addCustomStepToTask() {
   const txt = input.value.trim();
   if(!txt) { alert("กรุณากรอกชื่องานย่อยที่จะเพิ่มก่อนครับ"); return; }
   
-  editSubtasksClone.push({ name: txt, checked: false, note: "", daysSpent: 0 });
+  editSubtasksClone.push({ name: stripStepNumber(txt), checked: false, note: "", daysSpent: 0 });
   input.value = "";
   renderModalSteps();
 }
@@ -1324,11 +1335,33 @@ function updateStepNote(idx, val) {
   editSubtasksClone[idx].note = val;
 }
 
+function updateStepTitle(idx, val) {
+  if (!editSubtasksClone[idx]) return;
+  editSubtasksClone[idx].name = val;
+}
+
+function stripStepNumber(name = "") {
+  return String(name).replace(/^\s*\d+(?:\.\d+)*[.)]?\s+/, "").trim();
+}
+
+function numberStepTitles(steps) {
+  return steps.map((step, idx) => ({
+    ...step,
+    name: `${idx + 1}. ${stripStepNumber(step.name)}`
+  }));
+}
+
 async function saveModal() {
   const t = tasks.find(x => x.id === activeEditID);
   if (t) {
+    const emptyStepIndex = editSubtasksClone.findIndex(step => !stripStepNumber(step.name));
+    if (emptyStepIndex !== -1) {
+      alert(`กรุณากรอกชื่อหัวข้อที่ ${emptyStepIndex + 1} ก่อนบันทึก`);
+      document.querySelectorAll("#m-steps-area .step-title-input")[emptyStepIndex]?.focus();
+      return;
+    }
     t.status = getProgressStatus(editSubtasksClone);
-    t.subtasks = editSubtasksClone;
+    t.subtasks = numberStepTitles(editSubtasksClone);
     try {
       await AlitaDB.updateTask(t);
       closeModal();
