@@ -40,6 +40,15 @@
 - Admin จัดการคลังเทมเพลตขั้นตอนการดำเนินงานได้: สร้าง แก้ไข เปิด/ปิด และลบ โดยงานเดิมไม่เปลี่ยนตามเทมเพลต
 - ส่วนจัดการระบบของ Admin เป็นหน้าเต็มแยกจาก Workspace และแบ่งแท็บผู้ใช้งาน ประเภทระบบงาน และเทมเพลตขั้นตอน
 - ผู้ใช้เลือกเทมเพลตตอนสร้างงาน และระบบคัดลอกพร้อมรันเลขขั้นตอนให้อัตโนมัติ
+- Admin เลือกดูงานทั้งหมดหรือเฉพาะงานของตัวเองผ่าน Toggle ได้
+- การ์ดงานของ Admin แสดงอีเมลเจ้าของงาน
+- List View มี Pagination 10 รายการต่อหน้า พร้อมเลขหน้าและปุ่มก่อนหน้า/ถัดไป
+- Kanban แสดงเดดไลน์ และเน้นสีแดงเมื่อเลยกำหนดแต่ยังไม่เสร็จ
+- Modal แยกเป็น 2 ส่วน: แก้ไขรายละเอียดหลัก และจัดการขั้นตอนการดำเนินงาน
+- แก้ไขชื่อหัวข้อขั้นตอนได้ พร้อมรันเลขใหม่อัตโนมัติเมื่อเพิ่ม ลบ หรือย้ายลำดับ
+- Toast แจ้งผลสำเร็จเมื่อสร้าง บันทึก ลบ อนุมัติ หรือเปลี่ยนสิทธิ์
+- แก้ Responsive ไม่ให้ทั้งหน้าเลื่อนแนวนอน โดย Calendar และตาราง Admin เลื่อนเฉพาะพื้นที่ของตัวเอง
+- Deploy ด้วย GitHub Pages และ GitHub Actions อัตโนมัติเมื่อ push เข้า `main`
 
 ## สิ่งที่ต้องตั้งค่าหรือทำต่อ
 
@@ -90,12 +99,34 @@ python -m http.server 5500
 - เพิ่มคำยืนยันก่อนลบงานหลัก หัวข้อย่อย และประเภทงาน
 - เพิ่ม Backend และหน้า Admin จัดการประเภทระบบงาน
 
-### งานที่กำลังค้าง: อัปโหลดขึ้น GitHub
+### สถานะ GitHub และ Deployment
 
-- ติดตั้ง Git แล้ว: `C:\Program Files\Git\cmd\git.exe` เวอร์ชัน 2.55.0
-- PowerShell เดิมอาจยังไม่เห็น `git` ใน PATH ต้องเปิด PowerShell ใหม่ หรือเรียกด้วย path เต็ม
-- ยังไม่ได้ติดตั้ง GitHub CLI (`gh`)
-- ยังไม่ได้เลือก Repository แบบ Public หรือ Private
-- ยังไม่ได้รับ GitHub repository URL
-- ข้อเสนอแนะ: ใช้ชื่อ `task-alita`, ตั้งเป็น Private และไม่ commit `config.js`
-- ขั้นตอนถัดไป: เลือก visibility, สร้าง/รับ repo URL, ทำ `.gitignore`, สร้าง `config.example.js`, init/commit/push
+- Repository: `https://github.com/alita-1234/task-alita`
+- Visibility: Public
+- Branch หลัก: `main`
+- เว็บไซต์จริง: `https://alita-1234.github.io/task-alita/`
+- Deployment: GitHub Actions workflow `.github/workflows/deploy-pages.yml`
+- Push เข้า `main` แล้ว GitHub Pages deploy อัตโนมัติ
+- `config.js` ถูกใช้ใน deployment และมีเฉพาะ Supabase anon/public key ห้ามเปลี่ยนเป็น `service_role`
+- Commit ฟีเจอร์ล่าสุดก่อนบันทึกนี้: `3de39eb` — แยก Modal รายละเอียดงานและขั้นตอนการดำเนินงาน
+
+### งานล่าสุดที่ดำเนินการในรอบนี้
+
+- `a24ce75` แสดงเจ้าของงานสำหรับ Admin
+- `aadc956` เพิ่ม Toggle งานทั้งหมด/เฉพาะงานของ Admin
+- `fe591dc` เพิ่ม Pagination 10 รายการต่อหน้า
+- `25f2a3a` แก้ไขและรันเลขหัวข้อขั้นตอนอัตโนมัติ
+- `cbcbf17` เพิ่มตัวเลือกเทมเพลตตอนสร้างงาน
+- `e5cd14e` เพิ่ม Backend และหน้า Admin จัดการเทมเพลต
+- `26d19f2` แยกหน้าจัดการระบบเป็นหน้าเต็มและแท็บเมนู
+- `2bd8a3a` เพิ่ม Toast แจ้งผลการทำงาน
+- `834cf1b` แสดงเดดไลน์บน Kanban
+- `e363f71` แก้ Horizontal overflow
+- `e8c3269` รองรับแก้รายละเอียดหลักของงาน
+- `3de39eb` แยก Modal รายละเอียดและขั้นตอนออกจากกัน
+
+### จุดที่ต้องจำก่อนทำงานต่อ
+
+- ต้องรัน `supabase-schema.sql` ล่าสุดใน Supabase SQL Editor เพื่อเปิดใช้การจัดการ `workflow_templates`
+- หลังแก้โค้ดให้ commit และ push `main` แล้วตรวจ GitHub Actions จนสถานะ `success`
+- GitHub CLI (`gh`) ยังไม่ได้ติดตั้ง แต่ใช้ Git Credential Manager กับ `git push` ได้แล้ว
