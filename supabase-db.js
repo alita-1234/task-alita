@@ -101,7 +101,7 @@
     return data.id;
   }
 
-  async function updateTask(task) {
+  async function updateTaskDetails(task) {
     const { error } = await client
       .from(window.ALITA_CONFIG.TABLES.TASKS)
       .update({
@@ -113,6 +113,14 @@
         status: task.status,
         updated_at: new Date().toISOString()
       })
+      .eq("id", task.id);
+    if (error) throw error;
+  }
+
+  async function updateTask(task) {
+    const { error } = await client
+      .from(window.ALITA_CONFIG.TABLES.TASKS)
+      .update({ status: task.status, updated_at: new Date().toISOString() })
       .eq("id", task.id);
     if (error) throw error;
 
@@ -271,7 +279,7 @@
   }
 
   window.AlitaDB = Object.freeze({
-    connect, loadTasks, createTask, updateTask, deleteTask,
+    connect, loadTasks, createTask, updateTaskDetails, updateTask, deleteTask,
     getSession, signIn, signUp, signInWithGoogle, signOut,
     getMyProfile, listUsers, setUserRole, setUserApproval,
     listTaskTypes, saveTaskType, deleteTaskType,

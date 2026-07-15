@@ -23,7 +23,7 @@
   aside { display: flex; flex-direction: column; gap: 20px; }
   .sidebar-box { background: #ffffff; border: 1px solid #E2E8F0; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
   .box-title { font-size: 11px; font-weight: 700; color: #94A3B8; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
-  
+
   .filter-group { display: flex; flex-direction: column; gap: 4px; }
   .filter-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; background: transparent; border: none; padding: 8px 12px; border-radius: 6px; color: #475569; font-size: 13px; font-weight: 500; cursor: pointer; text-align: left; }
   .filter-btn:hover { background: #F1F5F9; color: #0F172A; }
@@ -472,7 +472,28 @@
   </main>
 </div>
 
-<!-- DATA EXPANDED MODAL (UNLOCKED FOR ALL STEPS MODIFICATION) -->
+<!-- แก้ไขรายละเอียดหลักของงาน -->
+<div class="overlay" id="taskDetailsModal">
+  <div class="modal" style="width:620px;">
+    <div style="border-bottom:1px solid #e4e7ec;padding-bottom:11px;">
+      <h3 style="font-size:16px;font-weight:800;">แก้ไขรายละเอียดงาน</h3>
+      <p style="margin-top:3px;color:#667085;font-size:11px;">แก้ไขข้อมูลหลักของรายการ โดยไม่กระทบขั้นตอนการดำเนินงาน</p>
+    </div>
+    <div class="modal-task-fields">
+      <div class="form-group title-field"><label for="d-task-title">ชื่องาน / ชื่อโครงการ</label><input type="text" id="d-task-title" maxlength="500" required></div>
+      <div class="form-group"><label for="d-task-type">ประเภทระบบงาน</label><select id="d-task-type"></select></div>
+      <div class="form-group"><label for="d-task-priority">ระดับความสำคัญ</label><select id="d-task-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
+      <div class="form-group"><label for="d-task-registered">วันที่ลงระบบ</label><input type="date" id="d-task-registered"></div>
+      <div class="form-group"><label for="d-task-due">วันที่ครบกำหนด</label><input type="date" id="d-task-due"></div>
+    </div>
+    <div style="border-top:1px solid #e4e7ec;padding-top:10px;display:flex;justify-content:flex-end;gap:6px;">
+      <button class="danger-btn" onclick="closeDetailsModal()" style="border:1px solid #cbd5e1;color:#475569;">ยกเลิก</button>
+      <button class="action-btn" onclick="saveDetailsModal()"><i data-lucide="save"></i>บันทึกรายละเอียด</button>
+    </div>
+  </div>
+</div>
+
+<!-- จัดการขั้นตอนการดำเนินงาน -->
 <div class="overlay" id="taskModal">
   <div class="modal">
     <div style="border-bottom: 1px solid #E2E8F0; padding-bottom:10px;">
@@ -487,14 +508,6 @@
       </div>
     </div>
 
-    <div class="modal-task-fields">
-      <div class="form-group title-field"><label for="m-task-title">ชื่องาน / ชื่อโครงการ</label><input type="text" id="m-task-title" maxlength="500" required></div>
-      <div class="form-group"><label for="m-task-type">ประเภทระบบงาน</label><select id="m-task-type"></select></div>
-      <div class="form-group"><label for="m-task-priority">ระดับความสำคัญ</label><select id="m-task-priority"><option value="High">High</option><option value="Medium">Medium</option><option value="Low">Low</option></select></div>
-      <div class="form-group"><label for="m-task-registered">วันที่ลงระบบ</label><input type="date" id="m-task-registered"></div>
-      <div class="form-group"><label for="m-task-due">วันที่ครบกำหนด</label><input type="date" id="m-task-due"></div>
-    </div>
-    
     <div>
       <h4 style="font-size:13px;font-weight:800;color:#344054;">ขั้นตอนการดำเนินงาน</h4>
       <p style="margin-top:2px;color:#667085;font-size:11px;">แก้ไขชื่อหรือจัดลำดับหัวข้อได้ ระบบจะรันเลขหัวข้อใหม่ให้อัตโนมัติ</p>
@@ -509,7 +522,7 @@
     <div class="modal-scroll" id="m-steps-area"></div>
     <div style="border-top:1px solid #E2E8F0; padding-top:10px; display:flex; justify-content:flex-end; gap:6px;">
       <button class="danger-btn" onclick="closeModal()" style="border:1px solid #CBD5E1; color:#475569;">ยกเลิก</button>
-      <button class="action-btn" onclick="saveModal()"><i data-lucide="save"></i>บันทึกการแก้ไข</button>
+      <button class="action-btn" onclick="saveModal()"><i data-lucide="save"></i>บันทึกขั้นตอน</button>
     </div>
   </div>
 </div>
@@ -1360,7 +1373,8 @@ function renderListView() {
         <span class="step-note-preview"><strong>ขั้นตอนที่กำลังทำ:</strong> ${activeStep ? activeStep.name : 'สำเร็จเรียบร้อย'} ${activeStep && activeStep.note ? `(${activeStep.note})` : ''}</span>
       </div>
       <div class="card-actions">
-        <button class="action-btn" onclick="openModal('${t.id}')"><i data-lucide="square-pen"></i>อัปเดตรายละเอียด</button>
+        <button class="logout-btn" onclick="openDetailsModal('${t.id}')"><i data-lucide="square-pen"></i>แก้ไขรายละเอียด</button>
+        <button class="action-btn" onclick="openModal('${t.id}')"><i data-lucide="list-checks"></i>ขั้นตอนดำเนินงาน</button>
         <button class="danger-btn" onclick="deleteTask('${t.id}')"><i data-lucide="trash-2"></i>ลบ</button>
       </div>
     `;
@@ -1425,7 +1439,7 @@ function renderKanbanView() {
     const div = document.createElement("div");
     const isOverdue = Boolean(t.dueDate && t.dueDate < getLocalDateISO() && getProgressState(t.subtasks) !== "completed");
     div.className = "kb-card";
-    div.onclick = () => openModal(t.id);
+    div.onclick = () => openDetailsModal(t.id);
     div.innerHTML = `
       <div class="kb-card-title">${t.title}</div>
       ${t.dueDate ? `<div class="kb-deadline${isOverdue ? ' overdue' : ''}">📅 ${isOverdue ? 'เลยกำหนด' : 'กำหนดส่ง'} ${formatDateDisplay(t.dueDate)}</div>` : ''}
@@ -1481,7 +1495,7 @@ function renderCalendarView() {
       const item = document.createElement("div");
       item.className = "cal-item";
       item.textContent = t.title;
-      item.onclick = (e) => { e.stopPropagation(); openModal(t.id); };
+      item.onclick = (e) => { e.stopPropagation(); openDetailsModal(t.id); };
       cell.appendChild(item);
     });
     area.appendChild(cell);
@@ -1578,8 +1592,22 @@ function openModal(id) {
   activeEditID = id;
   document.getElementById("m-title").textContent = t.title;
   document.getElementById("m-status").value = t.status;
-  document.getElementById("m-task-title").value = t.title;
-  const typeSelect = document.getElementById("m-task-type");
+  editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks)).map(step => ({
+    ...step,
+    name: stripStepNumber(step.name)
+  }));
+
+  renderModalSteps();
+  document.getElementById("taskModal").classList.add("open");
+  refreshIcons();
+}
+
+function openDetailsModal(id) {
+  const t = tasks.find(task => task.id === id);
+  if (!t) return;
+  activeEditID = id;
+  document.getElementById("d-task-title").value = t.title;
+  const typeSelect = document.getElementById("d-task-type");
   typeSelect.textContent = "";
   taskTypes.filter(type => type.is_active || type.code === t.type).forEach(type => {
     const option = document.createElement("option");
@@ -1588,17 +1616,50 @@ function openModal(id) {
     typeSelect.appendChild(option);
   });
   typeSelect.value = t.type;
-  document.getElementById("m-task-priority").value = t.priority;
-  document.getElementById("m-task-registered").value = t.registeredDate || "";
-  document.getElementById("m-task-due").value = t.dueDate || "";
-  editSubtasksClone = JSON.parse(JSON.stringify(t.subtasks)).map(step => ({
-    ...step,
-    name: stripStepNumber(step.name)
-  }));
-  
-  renderModalSteps();
-  document.getElementById("taskModal").classList.add("open");
+  document.getElementById("d-task-priority").value = t.priority;
+  document.getElementById("d-task-registered").value = t.registeredDate || "";
+  document.getElementById("d-task-due").value = t.dueDate || "";
+  document.getElementById("taskDetailsModal").classList.add("open");
   refreshIcons();
+}
+
+function closeDetailsModal() {
+  document.getElementById("taskDetailsModal").classList.remove("open");
+  activeEditID = null;
+}
+
+async function saveDetailsModal() {
+  const task = tasks.find(item => item.id === activeEditID);
+  if (!task) return;
+  const title = document.getElementById("d-task-title").value.trim();
+  const type = document.getElementById("d-task-type").value;
+  if (!title) {
+    alert("กรุณากรอกชื่องานก่อนบันทึก");
+    document.getElementById("d-task-title").focus();
+    return;
+  }
+  if (!type) {
+    alert("กรุณาเลือกประเภทระบบงานก่อนบันทึก");
+    return;
+  }
+  const updatedTask = {
+    ...task,
+    title,
+    type,
+    priority: document.getElementById("d-task-priority").value,
+    registeredDate: document.getElementById("d-task-registered").value || getLocalDateISO(),
+    dueDate: document.getElementById("d-task-due").value || ""
+  };
+  try {
+    await AlitaDB.updateTaskDetails(updatedTask);
+    closeDetailsModal();
+    await reloadTasks();
+    showToast("บันทึกรายละเอียดงานเรียบร้อยแล้ว");
+  } catch (error) {
+    console.error(error);
+    showAppError(error);
+    alert(`บันทึกรายละเอียดไม่สำเร็จ: ${error.message}`);
+  }
 }
 
 function renderModalSteps() {
@@ -1692,17 +1753,6 @@ function numberStepTitles(steps) {
 async function saveModal() {
   const t = tasks.find(x => x.id === activeEditID);
   if (t) {
-    const title = document.getElementById("m-task-title").value.trim();
-    const type = document.getElementById("m-task-type").value;
-    if (!title) {
-      alert("กรุณากรอกชื่องานก่อนบันทึก");
-      document.getElementById("m-task-title").focus();
-      return;
-    }
-    if (!type) {
-      alert("กรุณาเลือกประเภทระบบงานก่อนบันทึก");
-      return;
-    }
     const emptyStepIndex = editSubtasksClone.findIndex(step => !stripStepNumber(step.name));
     if (emptyStepIndex !== -1) {
       alert(`กรุณากรอกชื่อหัวข้อที่ ${emptyStepIndex + 1} ก่อนบันทึก`);
@@ -1711,11 +1761,6 @@ async function saveModal() {
     }
     const updatedTask = {
       ...t,
-      title,
-      type,
-      priority: document.getElementById("m-task-priority").value,
-      registeredDate: document.getElementById("m-task-registered").value || getLocalDateISO(),
-      dueDate: document.getElementById("m-task-due").value || "",
       status: getProgressStatus(editSubtasksClone),
       subtasks: numberStepTitles(editSubtasksClone)
     };
@@ -1723,11 +1768,11 @@ async function saveModal() {
       await AlitaDB.updateTask(updatedTask);
       closeModal();
       await reloadTasks();
-      showToast("บันทึกรายละเอียดและขั้นตอนเรียบร้อยแล้ว");
+      showToast("บันทึกขั้นตอนการดำเนินงานเรียบร้อยแล้ว");
     } catch (error) {
       console.error(error);
       showAppError(error);
-      alert(`บันทึกการแก้ไขไม่สำเร็จ: ${error.message}`);
+      alert(`บันทึกขั้นตอนไม่สำเร็จ: ${error.message}`);
     }
   }
 }
